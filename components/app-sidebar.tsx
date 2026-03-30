@@ -14,6 +14,7 @@ import {
   Calendar,
   ScanFace,
   Bell,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -44,6 +45,12 @@ const navItems = [
     href: "/timetable",
     icon: Calendar,
     description: "Class Schedule",
+  },
+  {
+    title: "Assignments",
+    href: "/assignments",
+    icon: BookOpen,
+    description: "Manage Assignments",
   },
   {
     title: "Letters",

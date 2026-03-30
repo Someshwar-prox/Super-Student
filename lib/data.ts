@@ -26,6 +26,17 @@ export interface Subject {
   teacherId: string;
 }
 
+export interface Assignment {
+  id: string;
+  title: string;
+  description: string;
+  subjectId: string;
+  dueDate: string;
+  maxMarks: number;
+  status: "active" | "closed";
+  createdAt: string;
+}
+
 export interface Teacher {
   id: string;
   name: string;
@@ -194,8 +205,95 @@ export const students: Student[] = [
   { id: "STU238", rollNumber: "22238", regdNo: "3235064022238", name: "Komara Ajay", course: "B.Tech", branch: "Computer Science & Systems Engineering", semester: 6, year: 3, email: "itsmeajay4110@gmail.com", phone: "9032900932", parentPhone: "9032900931", dateOfAdmission: "2022-08-01", dateOfBirth: "2004-05-22" },
   { id: "STU239", rollNumber: "22239", regdNo: "3235064022239", name: "Kompella Venkata Satyasri Jahnavi", course: "B.Tech", branch: "Computer Science & Systems Engineering", semester: 6, year: 3, email: "jahnavikvs11@gmail.com", phone: "8519960354", parentPhone: "8519960353", dateOfAdmission: "2022-08-01", dateOfBirth: "2004-07-28" },
   { id: "STU240", rollNumber: "22240", regdNo: "3235064022240", name: "Kona Amram Thimothi", course: "B.Tech", branch: "Computer Science & Systems Engineering", semester: 6, year: 3, email: "amramkona@gmail.com", phone: "8499941560", parentPhone: "8499941559", dateOfAdmission: "2022-08-01", dateOfBirth: "2004-09-12" },
-  { id: "STU241", rollNumber: "22241", regdNo: "3235064022241", name: "Konala S V Murali Ramakrishna Reddy", course: "B.Tech", branch: "Computer Science & Systems Engineering", semester: 6, year: 3, email: "konalamurali2006@gmail.com", phone: "9492054444", parentPhone: "9492054443", dateOfAdmission: "2022-08-01", dateOfBirth: "2004-11-05" },
+  { id: "STU241", rollNumber: "22241", regdNo: "3235064022241", name: "Konala S V Murali Ramakrishna Reddy", course: "B.Tech", branch: "Computer Science & Systems Engineering", semester: 6, year: 3, email: "konalamurali2006@gmail.com", phone: "9492054444", parentPhone: "9492054443", dateOfAdmission: "2022-08-01", dateOfBirth: "2004-11-05", password: "Student123" },
 ];
+
+// Sample Assignments
+export const assignments: Assignment[] = [
+  {
+    id: "ASG001",
+    title: "OOSE Design Patterns Implementation",
+    description: "Implement Singleton, Factory, and Observer patterns in Java. Submit code with documentation.",
+    subjectId: "CS3201",
+    dueDate: "2026-04-15",
+    maxMarks: 20,
+    status: "active",
+    createdAt: "2026-03-25",
+  },
+  {
+    id: "ASG002",
+    title: "ML Linear Regression Project",
+    description: "Build a linear regression model using Python (scikit-learn) on the provided dataset. Submit Jupyter notebook.",
+    subjectId: "CS3202",
+    dueDate: "2026-04-10",
+    maxMarks: 25,
+    status: "active",
+    createdAt: "2026-03-28",
+  },
+  {
+    id: "ASG003",
+    title: "Cryptography Caesar Cipher Implementation",
+    description: "Implement encryption and decryption using Caesar cipher. Write a Python program with GUI.",
+    subjectId: "CS3203",
+    dueDate: "2026-04-12",
+    maxMarks: 15,
+    status: "active",
+    createdAt: "2026-03-26",
+  },
+  {
+    id: "ASG004",
+    title: "Cloud Computing AWS Deployment",
+    description: "Deploy a simple web application on AWS EC2. Submit screenshots and architecture diagram.",
+    subjectId: "CS3204",
+    dueDate: "2026-04-20",
+    maxMarks: 30,
+    status: "active",
+    createdAt: "2026-03-27",
+  },
+  {
+    id: "ASG005",
+    title: "Embedded Systems Arduino Project",
+    description: "Create a temperature monitoring system using Arduino and DHT11 sensor. Submit code and video demo.",
+    subjectId: "CS3205",
+    dueDate: "2026-04-18",
+    maxMarks: 25,
+    status: "active",
+    createdAt: "2026-03-24",
+  },
+  {
+    id: "ASG006",
+    title: "OOSE Lab: UML Diagrams",
+    description: "Draw Use Case, Class, Sequence, and Activity diagrams for Library Management System.",
+    subjectId: "CS3206",
+    dueDate: "2026-04-05",
+    maxMarks: 20,
+    status: "closed",
+    createdAt: "2026-03-15",
+  },
+  {
+    id: "ASG007",
+    title: "ML Lab: K-Means Clustering",
+    description: "Implement K-Means clustering on Iris dataset. Visualize results using matplotlib.",
+    subjectId: "CS3207",
+    dueDate: "2026-04-08",
+    maxMarks: 20,
+    status: "active",
+    createdAt: "2026-03-20",
+  },
+];
+
+// Helper function to get assignments
+export function getAssignments(): Assignment[] {
+  return assignments;
+}
+
+export function getActiveAssignments(): Assignment[] {
+  return assignments.filter((a) => a.status === "active");
+}
+
+export function getAssignmentsBySubject(subjectId: string): Assignment[] {
+  return assignments.filter((a) => a.subjectId === subjectId);
+}
 
 // Seeded random number generator for deterministic attendance data
 // This prevents hydration mismatches between server and client

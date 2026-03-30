@@ -8,80 +8,73 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  GraduationCap, 
-  UserCog, 
-  LogIn, 
+import {
+  GraduationCap,
+  UserCog,
+  LogIn,
   AlertCircle,
   Eye,
   EyeOff,
   BookOpen
 } from "lucide-react";
-import { validateTeacherLogin, getStudentByRegdNo, getStudentByRollNumber } from "@/lib/data";
+import { validateTeacherLogin, validateStudentLogin } from "@/lib/data";
 
 export default function LoginPage() {
   const router = useRouter();
-  
+
   // Admin login state
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [adminError, setAdminError] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
-  
+
   // Student login state
   const [studentId, setStudentId] = useState("");
+  const [studentPassword, setStudentPassword] = useState("");
+  const [showStudentPassword, setShowStudentPassword] = useState(false);
   const [studentError, setStudentError] = useState("");
   const [studentLoading, setStudentLoading] = useState(false);
 
   const handleAdminLogin = async () => {
     setAdminError("");
     setAdminLoading(true);
-    
-    // Simulate network delay
+
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     const teacher = validateTeacherLogin(adminEmail, adminPassword);
-    
+
     if (teacher) {
-      // Store teacher info in sessionStorage
       sessionStorage.setItem("adminUser", JSON.stringify(teacher));
       router.push("/dashboard");
     } else {
-      setAdminError("Invalid email or password. Try: aneela@andhrauniversity.edu.in / admin123");
+      setAdminError("Invalid email or password.");
     }
-    
+
     setAdminLoading(false);
   };
 
   const handleStudentLogin = async () => {
     setStudentError("");
     setStudentLoading(true);
-    
-    // Simulate network delay
+
     await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Try to find student by registration number or roll number
-    let student = getStudentByRegdNo(studentId.trim());
-    if (!student) {
-      student = getStudentByRollNumber(studentId.trim());
-    }
-    
+
+    const student = validateStudentLogin(studentId.trim(), studentPassword);
+
     if (student) {
-      // Store student info in sessionStorage
       sessionStorage.setItem("studentUser", JSON.stringify(student));
       router.push("/student");
     } else {
-      setStudentError("Student not found. Please enter a valid Registration Number (e.g., 3235064022211) or Roll Number (e.g., 22211)");
+      setStudentError("Invalid ID or password. Default password is: Student123");
     }
-    
+
     setStudentLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <BookOpen className="h-8 w-8 text-primary" />
@@ -92,7 +85,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Login Card */}
         <Card className="shadow-lg">
           <CardHeader className="pb-4">
             <CardTitle>Welcome Back</CardTitle>
@@ -116,16 +108,42 @@ export default function LoginPage() {
               {/* Student Login */}
               <TabsContent value="student" className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="studentId">Registration Number / Roll Number</Label>
+                  <Label htmlFor="studentId">Registration / Roll Number</Label>
                   <Input
                     id="studentId"
                     placeholder="e.g., 3235064022211 or 22211"
                     value={studentId}
                     onChange={(e) => setStudentId(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleStudentLogin()}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="studentPassword">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="studentPassword"
+                      type={showStudentPassword ? "text" : "password"}
+                      placeholder="Enter password"
+                      value={studentPassword}
+                      onChange={(e) => setStudentPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleStudentLogin()}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowStudentPassword(!showStudentPassword)}
+                    >
+                      {showStudentPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Enter your full registration number or last 5 digits
+                    Default password for all students: <code className="bg-muted px-1 rounded">Student123</code>
                   </p>
                 </div>
 
@@ -136,10 +154,10 @@ export default function LoginPage() {
                   </Alert>
                 )}
 
-                <Button 
-                  onClick={handleStudentLogin} 
-                  className="w-full" 
-                  disabled={!studentId.trim() || studentLoading}
+                <Button
+                  onClick={handleStudentLogin}
+                  className="w-full"
+                  disabled={!studentId.trim() || !studentPassword.trim() || studentLoading}
                 >
                   {studentLoading ? (
                     <>
@@ -157,9 +175,8 @@ export default function LoginPage() {
                 <div className="rounded-lg bg-muted/50 p-3 text-sm">
                   <p className="font-medium mb-1">Test Student Accounts:</p>
                   <ul className="text-muted-foreground text-xs space-y-0.5">
-                    <li>Karedla Tanush Sai: <code className="bg-muted px-1 rounded">3235064022211</code></li>
-                    <li>Karnam Nivrutha Naidu: <code className="bg-muted px-1 rounded">22212</code></li>
-                    <li>Kiran Malla: <code className="bg-muted px-1 rounded">22229</code></li>
+                    <li>Regd: <code className="bg-muted px-1 rounded">3235064022211</code> | Pass: <code className="bg-muted px-1 rounded">Student123</code></li>
+                    <li>Roll: <code className="bg-muted px-1 rounded">22212</code> | Pass: <code className="bg-muted px-1 rounded">Student123</code></li>
                   </ul>
                 </div>
               </TabsContent>
@@ -182,7 +199,7 @@ export default function LoginPage() {
                   <div className="relative">
                     <Input
                       id="adminPassword"
-                      type={showPassword ? "text" : "password"}
+                      type={showAdminPassword ? "text" : "password"}
                       placeholder="Enter password"
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
@@ -193,9 +210,9 @@ export default function LoginPage() {
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
+                      onClick={() => setShowAdminPassword(!showAdminPassword)}
                     >
-                      {showPassword ? (
+                      {showAdminPassword ? (
                         <EyeOff className="h-4 w-4 text-muted-foreground" />
                       ) : (
                         <Eye className="h-4 w-4 text-muted-foreground" />
@@ -211,8 +228,8 @@ export default function LoginPage() {
                   </Alert>
                 )}
 
-                <Button 
-                  onClick={handleAdminLogin} 
+                <Button
+                  onClick={handleAdminLogin}
                   className="w-full"
                   disabled={!adminEmail.trim() || !adminPassword.trim() || adminLoading}
                 >
@@ -232,9 +249,7 @@ export default function LoginPage() {
                 <div className="rounded-lg bg-muted/50 p-3 text-sm">
                   <p className="font-medium mb-1">Test Faculty Accounts:</p>
                   <ul className="text-muted-foreground text-xs space-y-0.5">
-                    <li>Ms. D. Aneela: <code className="bg-muted px-1 rounded">aneela@andhrauniversity.edu.in</code></li>
-                    <li>Mrs. B. Sunanda: <code className="bg-muted px-1 rounded">sunanda@andhrauniversity.edu.in</code></li>
-                    <li>Password for all: <code className="bg-muted px-1 rounded">admin123</code></li>
+                    <li>aneela@andhrauniversity.edu.in / <code className="bg-muted px-1 rounded">admin123</code></li>
                   </ul>
                 </div>
               </TabsContent>
@@ -242,11 +257,8 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <p className="text-center text-xs text-muted-foreground mt-6">
           3/6 BTECH (CSE)-4, II Semester - Room A33
-          <br />
-          W.E.F. 19-01-2026
         </p>
       </div>
     </div>
