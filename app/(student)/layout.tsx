@@ -16,6 +16,7 @@ import {
   X,
   BookOpen,
   FileText,
+  Calendar,
 } from "lucide-react";
 import { type Student } from "@/lib/data";
 
@@ -29,6 +30,11 @@ const navItems = [
     title: "My Attendance",
     href: "/student/attendance",
     icon: ClipboardCheck,
+  },
+  {
+    title: "Timetable",
+    href: "/student/timetable",
+    icon: Calendar,
   },
   {
     title: "Letters",

@@ -12,6 +12,7 @@ import {
   QrCode,
   LogOut,
   Home,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -36,6 +37,12 @@ const navItems = [
     href: "/qr-attendance",
     icon: QrCode,
     description: "Location-Based QR",
+  },
+  {
+    title: "Timetable",
+    href: "/timetable",
+    icon: Calendar,
+    description: "Class Schedule",
   },
   {
     title: "Letters",
