@@ -148,31 +148,34 @@ export default function StudentLettersPage() {
       bonafide: (
         <div ref={letterRef} className="bg-white text-black p-8 font-serif relative">
           {/* Watermark - AU Logo */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+            style={{ opacity: 0.08 }}
+          >
             <Image
               src="/andhra-university-logo.png"
               alt="AU Watermark"
-              width={350}
-              height={350}
-              className="opacity-15 object-contain"
+              width={400}
+              height={400}
+              className="object-contain"
               priority
             />
           </div>
 
-          <div className="header text-center mb-8">
+          <div className="header text-center mb-8 relative z-10">
             <h1 className="text-2xl font-bold">ANDHRA UNIVERSITY</h1>
             <h2 className="text-lg">Department of Computer Science and Systems Engineering</h2>
             <p className="text-sm text-gray-600">Visakhapatnam - 530003, Andhra Pradesh, India</p>
           </div>
 
-          <div className="ref-no flex justify-between text-sm mb-6">
+          <div className="ref-no flex justify-between text-sm mb-6 relative z-10">
             <span className="pending-serial">Serial No: PENDING</span>
             <span>Date: {currentDate}</span>
           </div>
 
-          <h3 className="text-center text-xl font-bold underline mb-8">BONAFIDE CERTIFICATE</h3>
+          <h3 className="text-center text-xl font-bold underline mb-8 relative z-10">BONAFIDE CERTIFICATE</h3>
 
-          <div className="content text-justify leading-8">
+          <div className="content text-justify leading-8 relative z-10">
             <p className="mb-4">
               This is to certify that <strong>{student.name}</strong>, bearing Registration Number{" "}
               <strong>{student.regdNo}</strong> and Roll Number <strong>{student.rollNumber}</strong>,
@@ -190,7 +193,7 @@ export default function StudentLettersPage() {
             </p>
           </div>
 
-          <div className="signature mt-16 text-right">
+          <div className="signature mt-16 text-right relative z-10">
             <p className="mb-12">Head of the Department</p>
             <p className="font-bold">Dr. Valli Kumari V</p>
             <p>Professor & HOD</p>
@@ -212,20 +215,20 @@ export default function StudentLettersPage() {
             </div>
           </div>
 
-          <div className="header text-center mb-8">
+          <div className="header text-center mb-8 relative z-10">
             <h1 className="text-2xl font-bold">ANDHRA UNIVERSITY</h1>
             <h2 className="text-lg">Department of Computer Science and Systems Engineering</h2>
             <p className="text-sm text-gray-600">Visakhapatnam - 530003, Andhra Pradesh, India</p>
           </div>
 
-          <div className="ref-no flex justify-between text-sm mb-6">
+          <div className="ref-no flex justify-between text-sm mb-6 relative z-10">
             <span className="pending-serial">Serial No: PENDING</span>
             <span>Date: {currentDate}</span>
           </div>
 
-          <h3 className="text-center text-xl font-bold underline mb-8">STUDY CERTIFICATE</h3>
+          <h3 className="text-center text-xl font-bold underline mb-8 relative z-10">STUDY CERTIFICATE</h3>
 
-          <div className="content text-justify leading-8">
+          <div className="content text-justify leading-8 relative z-10">
             <p className="mb-4">
               This is to certify that <strong>{student.name}</strong>, S/o or D/o of the guardian, bearing
               Registration Number <strong>{student.regdNo}</strong>, has been studying in this institution.
@@ -246,7 +249,7 @@ export default function StudentLettersPage() {
             </p>
           </div>
 
-          <div className="signature mt-16 text-right">
+          <div className="signature mt-16 text-right relative z-10">
             <p className="mb-12">Head of the Department</p>
             <p className="font-bold">Dr. Valli Kumari V</p>
             <p>Professor & HOD</p>
@@ -267,18 +270,18 @@ export default function StudentLettersPage() {
             </div>
           </div>
 
-          <div className="header text-center mb-8">
+          <div className="header text-center mb-8 relative z-10">
             <h1 className="text-2xl font-bold">ANDHRA UNIVERSITY</h1>
             <h2 className="text-lg">Department of Computer Science and Systems Engineering</h2>
             <p className="text-sm text-gray-600">Visakhapatnam - 530003, Andhra Pradesh, India</p>
           </div>
 
-          <div className="ref-no flex justify-between text-sm mb-6">
+          <div className="ref-no flex justify-between text-sm mb-6 relative z-10">
             <span className="pending-serial">Serial No: PENDING</span>
             <span>Date: {currentDate}</span>
           </div>
 
-          <h3 className="text-center text-xl font-bold underline mb-8">EDUCATION LOAN ESTIMATION LETTER</h3>
+          <h3 className="text-center text-xl font-bold underline mb-8 relative z-10">EDUCATION LOAN ESTIMATION LETTER</h3>
 
           <p className="mb-4">
             To,<br />
@@ -291,7 +294,7 @@ export default function StudentLettersPage() {
             <strong>Subject:</strong> Education Loan for {student.name} - Estimation of Expenses
           </p>
 
-          <div className="content text-justify leading-8">
+          <div className="content text-justify leading-8 relative z-10">
             <p className="mb-4">
               This is to certify that <strong>{student.name}</strong>, bearing Registration Number{" "}
               <strong>{student.regdNo}</strong>, is a bonafide student of this department, currently pursuing{" "}
@@ -309,7 +312,7 @@ export default function StudentLettersPage() {
             </p>
           </div>
 
-          <div className="signature mt-16 text-right">
+          <div className="signature mt-16 text-right relative z-10">
             <p className="mb-12">Head of the Department</p>
             <p className="font-bold">Dr. Valli Kumari V</p>
             <p>Professor & HOD</p>
@@ -330,18 +333,18 @@ export default function StudentLettersPage() {
             </div>
           </div>
 
-          <div className="header text-center mb-8">
+          <div className="header text-center mb-8 relative z-10">
             <h1 className="text-2xl font-bold">ANDHRA UNIVERSITY</h1>
             <h2 className="text-lg">Department of Computer Science and Systems Engineering</h2>
             <p className="text-sm text-gray-600">Visakhapatnam - 530003, Andhra Pradesh, India</p>
           </div>
 
-          <div className="ref-no flex justify-between text-sm mb-6">
+          <div className="ref-no flex justify-between text-sm mb-6 relative z-10">
             <span className="pending-serial">Serial No: PENDING</span>
             <span>Date: {getCurrentDate()}</span>
           </div>
 
-          <h3 className="text-center text-xl font-bold underline mb-8">INTERNSHIP PERMISSION LETTER</h3>
+          <h3 className="text-center text-xl font-bold underline mb-8 relative z-10">INTERNSHIP PERMISSION LETTER</h3>
 
           <p className="mb-4">
             To,<br />
@@ -354,7 +357,7 @@ export default function StudentLettersPage() {
             <strong>Subject:</strong> Permission for Internship - {student.name}
           </p>
 
-          <div className="content text-justify leading-8">
+          <div className="content text-justify leading-8 relative z-10">
             <p className="mb-4">
               This is to certify that <strong>{student.name}</strong>, bearing Registration Number{" "}
               <strong>{student.regdNo}</strong> and Roll Number <strong>{student.rollNumber}</strong>, is a bonafide
@@ -371,7 +374,7 @@ export default function StudentLettersPage() {
             </p>
           </div>
 
-          <div className="signature mt-16 text-right">
+          <div className="signature mt-16 text-right relative z-10">
             <p className="mb-12">Head of the Department</p>
             <p className="font-bold">Dr. Valli Kumari V</p>
             <p>Professor & HOD</p>

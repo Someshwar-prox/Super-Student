@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getStudentById, type Student } from "@/lib/data";
+import { addNotification } from "@/lib/notifications";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,12 +85,13 @@ export default function LetterApprovalsPage() {
     }
   };
 
-  const generateSerialNumber = (): string => {
+  const generateSerialNumber = (letterType: LetterType): string => {
     const year = new Date().getFullYear();
     const stored = localStorage.getItem(APPROVED_LETTERS_KEY);
     const approvedLetters = stored ? JSON.parse(stored) : [];
     const sequence = (approvedLetters.length + 1).toString().padStart(4, "0");
-    return `AU/CSSE/${year}/${sequence}`;
+    const typePrefix = letterType.substring(0, 3).toUpperCase();
+    return `AU/CSSE/${typePrefix}/${year}/${sequence}`;
   };
 
   const handleApprove = (request: LetterRequest) => {
@@ -118,7 +120,7 @@ export default function LetterApprovalsPage() {
   const confirmApproval = () => {
     if (!selectedRequest) return;
 
-    const serialNumber = generateSerialNumber();
+    const serialNumber = generateSerialNumber(selectedRequest.letterType);
     const processedAt = new Date().toISOString();
 
     // Update request status
@@ -144,9 +146,27 @@ export default function LetterApprovalsPage() {
     approvedLetters.push(approvedLetter);
     localStorage.setItem(APPROVED_LETTERS_KEY, JSON.stringify(approvedLetters));
 
+    // Create notification for student
+    const letterTypeNames: Record<LetterType, string> = {
+      bonafide: "Bonafide Certificate",
+      study: "Study Certificate",
+      loan: "Loan Estimation Letter",
+      internship: "Internship Permission Letter",
+    };
+
+    addNotification({
+      studentId: selectedRequest.studentId,
+      type: "letter_approved",
+      title: "Letter Request Approved",
+      message: `Your ${letterTypeNames[selectedRequest.letterType]} has been approved with serial number ${serialNumber}. Click to download your official letter.`,
+      letterRequestId: selectedRequest.id,
+      serialNumber: serialNumber,
+      letterType: selectedRequest.letterType,
+    });
+
     setRequests(updatedRequests);
     setShowDialog(false);
-    setSuccessMessage(`Letter approved! Serial No: ${serialNumber}. Email notification sent to ${selectedRequest.studentEmail}`);
+    setSuccessMessage(`Letter approved! Serial No: ${serialNumber}. Notification sent to student.`);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 5000);
   };
@@ -163,9 +183,26 @@ export default function LetterApprovalsPage() {
     );
 
     localStorage.setItem(LETTER_REQUESTS_KEY, JSON.stringify(updatedRequests));
+
+    // Create notification for student
+    const letterTypeNames: Record<LetterType, string> = {
+      bonafide: "Bonafide Certificate",
+      study: "Study Certificate",
+      loan: "Loan Estimation Letter",
+      internship: "Internship Permission Letter",
+    };
+
+    addNotification({
+      studentId: selectedRequest.studentId,
+      type: "letter_rejected",
+      title: "Letter Request Rejected",
+      message: `Your request for ${letterTypeNames[selectedRequest.letterType]} has been rejected. ${adminNotes ? `Reason: ${adminNotes}` : "Please contact the department for more information."}`,
+      letterRequestId: selectedRequest.id,
+    });
+
     setRequests(updatedRequests);
     setShowDialog(false);
-    setSuccessMessage(`Letter request rejected. Notification sent to ${selectedRequest.studentEmail}`);
+    setSuccessMessage(`Letter request rejected. Notification sent to student.`);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 5000);
   };

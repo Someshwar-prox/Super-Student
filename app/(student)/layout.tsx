@@ -17,7 +17,9 @@ import {
   FileText,
   Calendar,
   FileSpreadsheet,
+  Bell,
 } from "lucide-react";
+import { getUnreadNotificationCount } from "@/lib/notifications";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { type Student } from "@/lib/data";
 import Image from "next/image";
@@ -49,6 +51,11 @@ const navItems = [
     icon: FileText,
   },
   {
+    title: "Notifications",
+    href: "/student/notifications",
+    icon: Bell,
+  },
+  {
     title: "Profile",
     href: "/student/profile",
     icon: User,
@@ -65,16 +72,28 @@ export default function StudentLayout({
   const [student, setStudent] = useState<Student | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const storedStudent = sessionStorage.getItem("studentUser");
     if (storedStudent) {
-      setStudent(JSON.parse(storedStudent));
+      const parsed = JSON.parse(storedStudent);
+      setStudent(parsed);
+      setUnreadCount(getUnreadNotificationCount(parsed.id));
     } else {
       router.push("/login");
     }
     setIsLoading(false);
   }, [router]);
+
+  // Refresh unread count every 30 seconds
+  useEffect(() => {
+    if (!student) return;
+    const interval = setInterval(() => {
+      setUnreadCount(getUnreadNotificationCount(student.id));
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [student]);
 
   const handleLogout = () => {
     sessionStorage.removeItem("studentUser");
@@ -117,6 +136,14 @@ export default function StudentLayout({
           </div>
           
           <div className="flex items-center gap-3">
+            <Link href="/student/notifications" className="relative p-2 hover:bg-primary-foreground/10 rounded-lg">
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </Link>
             <Link href="/student/profile" className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-full overflow-hidden bg-primary-foreground/20 flex items-center justify-center border-2 border-primary-foreground/30">
                 {student.photo ? (
@@ -194,20 +221,28 @@ export default function StudentLayout({
           <nav className="space-y-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
+              const isNotifications = item.href === "/student/notifications";
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
+                    "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors",
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
-                  {item.title}
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5" />
+                    {item.title}
+                  </div>
+                  {isNotifications && unreadCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
