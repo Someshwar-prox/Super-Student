@@ -14,7 +14,6 @@ import {
   BookOpen,
   AlertTriangle,
   CheckCircle,
-  ScanFace,
   ArrowRight,
 } from "lucide-react";
 import {
@@ -113,21 +112,13 @@ export default function StudentDashboardPage() {
     <div className="p-4 lg:p-6 space-y-6">
       {/* Welcome Banner */}
       <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl p-6 border border-primary/10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Welcome back, {student.name.split(" ")[0]}!
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {student.course} - {student.year}rd Year, Semester {student.semester}
-            </p>
-          </div>
-          <Button asChild size="lg">
-            <Link href="/face-attendance">
-              <ScanFace className="h-5 w-5 mr-2" />
-              Face Attendance
-            </Link>
-          </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Welcome back, {student.name.split(" ")[0]}!
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {student.course} - {student.year}rd Year, Semester {student.semester}
+          </p>
         </div>
       </div>
 

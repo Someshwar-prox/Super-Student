@@ -89,7 +89,7 @@ export default function HomePage() {
                 </div>
                 <CardTitle className="text-xl">Student Portal</CardTitle>
                 <CardDescription>
-                  View your attendance, use face recognition for check-in, and track your academic progress.
+                  View your attendance, check assignments, and track your academic progress.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -100,7 +100,7 @@ export default function HomePage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-success" />
-                    Face recognition attendance
+                    View assignments & timetable
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-success" />
