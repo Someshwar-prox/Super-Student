@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { type Student } from "@/lib/data";
+import Image from "next/image";
 
 const navItems = [
   {
@@ -116,10 +117,27 @@ export default function StudentLayout({
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="text-right hidden sm:block">
-              <p className="font-medium text-sm">{student.name}</p>
-              <p className="text-xs opacity-80">Roll: {student.rollNumber}</p>
-            </div>
+            <Link href="/student/profile" className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-full overflow-hidden bg-primary-foreground/20 flex items-center justify-center border-2 border-primary-foreground/30">
+                {student.photo ? (
+                  <Image
+                    src={student.photo}
+                    alt={student.name}
+                    width={36}
+                    height={36}
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <span className="text-sm font-bold">
+                    {student.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                  </span>
+                )}
+              </div>
+              <div className="text-right hidden sm:block">
+                <p className="font-medium text-sm">{student.name}</p>
+                <p className="text-xs opacity-80">Roll: {student.rollNumber}</p>
+              </div>
+            </Link>
             <ThemeToggle />
             <Button
               variant="ghost"
@@ -152,8 +170,20 @@ export default function StudentLayout({
       >
         <div className="p-4">
           <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg mb-4 lg:hidden">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-primary" />
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
+              {student.photo ? (
+                <Image
+                  src={student.photo}
+                  alt={student.name}
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-lg font-bold text-primary">
+                  {student.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                </span>
+              )}
             </div>
             <div>
               <p className="font-medium text-sm">{student.name}</p>

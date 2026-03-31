@@ -14,6 +14,7 @@ export interface Student {
   dateOfAdmission: string;
   dateOfBirth: string;
   password: string;
+  photo?: string;
 }
 
 export interface Subject {

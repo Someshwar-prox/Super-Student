@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   User,
@@ -12,8 +13,13 @@ import {
   Hash,
   Building2,
   Mail,
+  Phone,
   Clock,
+  Edit,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 import {
   type Student,
   subjects,
@@ -69,25 +75,44 @@ export default function StudentProfilePage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <User className="h-6 w-6" />
-          My Profile
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          View your student information and academic details
-        </p>
+      {/* Header with Edit Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <User className="h-6 w-6" />
+            My Profile
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            View your student information and academic details
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/student/profile/edit">
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Profile
+          </Link>
+        </Button>
       </div>
 
       {/* Profile Card */}
       <Card>
         <CardHeader>
           <div className="flex items-start gap-4">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-3xl font-bold text-primary">
-                {student.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-              </span>
+            {/* Profile Photo */}
+            <div className="w-20 h-20 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center border-4 border-primary/20">
+              {student.photo ? (
+                <Image
+                  src={student.photo}
+                  alt={student.name}
+                  width={80}
+                  height={80}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-3xl font-bold text-primary">
+                  {student.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                </span>
+              )}
             </div>
             <div className="flex-1">
               <CardTitle className="text-xl">{student.name}</CardTitle>
@@ -108,8 +133,9 @@ export default function StudentProfilePage() {
         </CardHeader>
       </Card>
 
-      {/* Student Details */}
+      {/* Student Details & Contact Information */}
       <div className="grid md:grid-cols-2 gap-6">
+        {/* Academic Information */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -157,19 +183,74 @@ export default function StudentProfilePage() {
                 <p className="font-medium">2025-2026</p>
               </div>
             </div>
+            <Separator />
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Date of Birth</p>
+                <p className="font-medium">
+                  {student.dateOfBirth
+                    ? new Date(student.dateOfBirth).toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })
+                    : "Not set"}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
+        {/* Contact Information */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Attendance Summary
+              <Mail className="h-5 w-5" />
+              Contact Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-center p-6 rounded-lg bg-muted/50">
-              <p className="text-4xl font-bold text-foreground">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Email Address</p>
+                <p className="font-medium">{student.email || "Not set"}</p>
+              </div>
+            </div>
+            <Separator />
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Phone Number</p>
+                <p className="font-medium">{student.phone || "Not set"}</p>
+              </div>
+            </div>
+            <Separator />
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Parent&apos;s Phone</p>
+                <p className="font-medium">{student.parentPhone || "Not set"}</p>
+              </div>
+            </div>
+            <Separator />
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <Clock className="h-5 w-5" />
+                Attendance Summary
+              </div>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-muted/50">
+              <p className="text-3xl font-bold text-foreground">
                 {overallAttendance.percentage}%
               </p>
               <p className="text-sm text-muted-foreground mt-1">
@@ -186,35 +267,25 @@ export default function StudentProfilePage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 rounded-lg bg-success/10">
-                <p className="text-2xl font-bold text-success">
+              <div className="text-center p-3 rounded-lg bg-success/10">
+                <p className="text-xl font-bold text-success">
                   {overallAttendance.present}
                 </p>
-                <p className="text-sm text-muted-foreground">Classes Attended</p>
+                <p className="text-xs text-muted-foreground">Classes Attended</p>
               </div>
-              <div className="text-center p-4 rounded-lg bg-destructive/10">
-                <p className="text-2xl font-bold text-destructive">
+              <div className="text-center p-3 rounded-lg bg-destructive/10">
+                <p className="text-xl font-bold text-destructive">
                   {overallAttendance.total - overallAttendance.present}
                 </p>
-                <p className="text-sm text-muted-foreground">Classes Missed</p>
+                <p className="text-xs text-muted-foreground">Classes Missed</p>
               </div>
             </div>
 
-            <Separator />
-
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Total Classes</span>
-              <span className="font-medium">{overallAttendance.total}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-sm pt-2">
               <span className="text-muted-foreground">Subjects with Low Attendance</span>
               <Badge variant={lowAttendanceCount > 0 ? "destructive" : "outline"}>
                 {lowAttendanceCount}
               </Badge>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Minimum Required</span>
-              <span className="font-medium">{ATTENDANCE_THRESHOLD}%</span>
             </div>
           </CardContent>
         </Card>
