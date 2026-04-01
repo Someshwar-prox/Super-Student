@@ -103,7 +103,7 @@ export default function FaceAttendancePage() {
 
   // OTP Timer
   useEffect(() => {
-    if (sessionActive && otpEnabled && otpTimeLeft > 0) {
+    if (sessionActive && otpTimeLeft > 0) {
       otpTimerRef.current = setInterval(() => {
         setOtpTimeLeft((prev) => {
           if (prev <= 1) {
@@ -119,7 +119,7 @@ export default function FaceAttendancePage() {
     return () => {
       if (otpTimerRef.current) clearInterval(otpTimerRef.current);
     };
-  }, [sessionActive, otpEnabled, otpTimeLeft]);
+  }, [sessionActive, otpTimeLeft]);
 
   // Generate 6-digit OTP
   const generateOTP = () => {
