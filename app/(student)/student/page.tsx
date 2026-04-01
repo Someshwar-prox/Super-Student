@@ -22,6 +22,7 @@ import {
   subjects,
   attendanceRecords,
   timetable,
+  timeSlots,
   calculateStudentAttendance,
   ATTENDANCE_THRESHOLD,
 } from "@/lib/data";
@@ -86,10 +87,12 @@ export default function StudentDashboardPage() {
       .sort((a, b) => a.period - b.period)
       .map((entry) => {
         const subject = subjects.find((s) => s.id === entry.subjectId);
+        const timeSlot = timeSlots.find((t) => t.period === entry.period);
         return {
           ...entry,
           subjectName: subject?.name || "Unknown",
           subjectCode: subject?.code || "",
+          time: timeSlot ? `${timeSlot.startTime} - ${timeSlot.endTime}` : "",
         };
       });
   };

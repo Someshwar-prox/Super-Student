@@ -384,9 +384,9 @@ export default function DashboardPage() {
                             border: "1px solid var(--border)",
                             borderRadius: "var(--radius)",
                           }}
-                          formatter={(value: number, name: string, props: { payload: { fullName: string } }) => [
+                          formatter={(value: number, name: string, props: { payload?: { fullName?: string } }) => [
                             `${value}%`,
-                            props.payload.fullName,
+                            props?.payload?.fullName || name,
                           ]}
                         />
                         <Bar dataKey="attendance" fill="oklch(0.55 0.18 160)" radius={[0, 4, 4, 0]} />
@@ -469,9 +469,9 @@ export default function DashboardPage() {
                             border: "1px solid var(--border)",
                             borderRadius: "var(--radius)",
                           }}
-                          formatter={(value: number, name: string, props: { payload: { fullName: string; present: number; total: number } }) => [
-                            `${value}% (${props.payload.present}/${props.payload.total})`,
-                            props.payload.fullName,
+                          formatter={(value: number, name: string, props: { payload?: { fullName?: string; present?: number; total?: number } }) => [
+                            `${value}% (${props?.payload?.present || 0}/${props?.payload?.total || 0})`,
+                            props?.payload?.fullName || name,
                           ]}
                         />
                         <Bar

@@ -2,6 +2,9 @@
 
 import { timetable, type TimetableEntry, type TimetableModification } from "@/lib/data";
 
+// Re-export TimetableModification type
+export type { TimetableModification };
+
 const MODIFICATIONS_KEY = "timetable_modifications";
 const MODIFIED_TIMETABLE_KEY = "modified_timetable";
 

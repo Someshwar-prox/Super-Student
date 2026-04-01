@@ -126,7 +126,7 @@ export default function LettersPage() {
     const refNo = generateRefNumber();
     const currentDate = getCurrentDate();
 
-    const letterContent: Record<LetterType, JSX.Element> = {
+    const letterContent: Record<LetterType, React.ReactElement> = {
       bonafide: (
         <div ref={letterRef} className="bg-white text-black p-8 font-serif">
           <div className="header text-center mb-8">
