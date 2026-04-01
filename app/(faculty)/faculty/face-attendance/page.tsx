@@ -17,14 +17,10 @@ import {
   AlertTriangle,
   RefreshCw,
   Clock,
-  Key,
-  Shield,
-  BookOpen,
 } from "lucide-react";
 import * as tf from "@tensorflow/tfjs";
 import { subjects, students, type Student } from "@/lib/data";
 import { addAttendanceRecord } from "@/lib/attendance-store";
-import { SESSION_KEYS } from "@/lib/anti-proxy";
 
 // Model configuration
 const MODEL_URL = "/models/face-detection/model.json";
@@ -62,17 +58,10 @@ export default function FaceAttendancePage() {
   const [error, setError] = useState<string>("");
   const [prediction, setPrediction] = useState<string>("");
 
-  // Anti-proxy feature states - OTP only
-  const [sessionActive, setSessionActive] = useState(false);
-  const [otp, setOtp] = useState<string>("");
-  const [otpTimeLeft, setOtpTimeLeft] = useState(90);
-  const [isStoringSession, setIsStoringSession] = useState(false);
-
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const otpTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load model and metadata
   const loadModel = useCallback(async () => {
@@ -99,70 +88,6 @@ export default function FaceAttendancePage() {
     loadModel();
     return () => stopScanning();
   }, [loadModel]);
-
-  // OTP Timer
-  useEffect(() => {
-    if (sessionActive && otpTimeLeft > 0) {
-      otpTimerRef.current = setInterval(() => {
-        setOtpTimeLeft((prev) => {
-          if (prev <= 1) {
-            // OTP expired
-            localStorage.removeItem(SESSION_KEYS.otp);
-            localStorage.removeItem(SESSION_KEYS.otpExpiry);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (otpTimerRef.current) clearInterval(otpTimerRef.current);
-    };
-  }, [sessionActive, otpTimeLeft]);
-
-  // Generate 6-digit OTP
-  const generateOTP = () => {
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setOtp(newOtp);
-    setOtpTimeLeft(90);
-    const expiry = Date.now() + 90000; // 90 seconds
-    localStorage.setItem(SESSION_KEYS.otp, newOtp);
-    localStorage.setItem(SESSION_KEYS.otpExpiry, expiry.toString());
-  };
-
-  // Start session - OTP only
-  const startSession = () => {
-    if (!selectedSubject || !selectedPeriod) {
-      setError("Please select subject and period first");
-      return;
-    }
-
-    setSessionActive(true);
-    localStorage.setItem(SESSION_KEYS.sessionActive, "true");
-
-    // Store subject and period info locally
-    const subject = subjects.find(s => s.id === selectedSubject);
-    localStorage.setItem(SESSION_KEYS.subjectId, selectedSubject);
-    localStorage.setItem(SESSION_KEYS.subjectName, subject?.name || "");
-    localStorage.setItem(SESSION_KEYS.period, selectedPeriod);
-
-    // Generate OTP
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = Date.now() + 90000;
-    setOtp(newOtp);
-    setOtpTimeLeft(90);
-    localStorage.setItem(SESSION_KEYS.otp, newOtp);
-    localStorage.setItem(SESSION_KEYS.otpExpiry, otpExpiry.toString());
-  };
-
-  // End session
-  const endSession = () => {
-    setSessionActive(false);
-    setOtp("");
-    setOtpTimeLeft(0);
-    // Clear session data
-    Object.values(SESSION_KEYS).forEach((key) => localStorage.removeItem(key));
-  };
 
   // Webcam functions
   const startWebcam = async () => {
@@ -226,10 +151,6 @@ export default function FaceAttendancePage() {
   const startScanning = async () => {
     if (!selectedSubject || !selectedPeriod) {
       setError("Please select subject and period");
-      return;
-    }
-    if (!sessionActive) {
-      setError("Please start an attendance session first");
       return;
     }
 
@@ -325,149 +246,56 @@ export default function FaceAttendancePage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Face Recognition Attendance</h1>
             <p className="text-muted-foreground">
-              AI-powered face detection with anti-proxy protection
+              AI-powered face detection for automated attendance marking
             </p>
           </div>
         </div>
       </div>
 
-      {/* Session Status */}
-      {!sessionActive ? (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            No active session. Configure anti-proxy settings and start a session before scanning.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <Alert className="bg-green-50 border-green-200">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-700">
-            Session active! OTP verification enabled
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Anti-Proxy Control Panel */}
+      {/* Configuration Panel */}
       <Card className="border-2 border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Anti-Proxy Protection
+            <Camera className="h-5 w-5" />
+            Session Configuration
           </CardTitle>
           <CardDescription>
-            Enable security features before starting attendance session
+            Select subject and period before starting attendance
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Subject and Period Selection */}
-          {!sessionActive && (
-            <div className="grid md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg border border-dashed border-muted-foreground/30">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Subject</Label>
-                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map((subject) => (
-                      <SelectItem key={subject.id} value={subject.id}>
-                        {subject.code} - {subject.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Period</Label>
-                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7].map((period) => (
-                      <SelectItem key={period} value={period.toString()}>
-                        Period {period}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Subject</Label>
+              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject.id} value={subject.id}>
+                      {subject.code} - {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-
-          {/* Session Info Display (when active) */}
-          {sessionActive && (selectedSubject || selectedPeriod) && (
-            <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                <span className="font-medium">Active Session</span>
-              </div>
-              <div className="grid md:grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Subject: </span>
-                  <span className="font-medium">
-                    {subjects.find(s => s.id === selectedSubject)?.code || "-"} - {subjects.find(s => s.id === selectedSubject)?.name || "-"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Period: </span>
-                  <span className="font-medium">{selectedPeriod || "-"}</span>
-                </div>
-              </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Period</Label>
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select period" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6, 7].map((period) => (
+                    <SelectItem key={period} value={period.toString()}>
+                      Period {period}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-
-          {/* OTP Display - Always show when session active */}
-          {sessionActive && (
-            <div className="p-6 bg-primary/5 rounded-lg border-2 border-primary/20 text-center">
-              <p className="text-sm text-muted-foreground mb-2">Current OTP (expires in {otpTimeLeft}s)</p>
-              <div className="text-5xl font-mono font-bold text-primary tracking-widest">
-                {otp}
-              </div>
-              <div className="mt-4 flex justify-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={generateOTP}
-                  disabled={otpTimeLeft > 0}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Regenerate OTP
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-4">
-                Share this 6-digit code with students to join the session
-              </p>
-            </div>
-          )}
-
-          {/* Session Controls */}
-          <div className="flex justify-center">
-            {!sessionActive ? (
-              <Button
-                size="lg"
-                onClick={startSession}
-                disabled={isStoringSession}
-              >
-                {isStoringSession ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating Session...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Start Attendance Session
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button variant="destructive" size="lg" onClick={endSession}>
-                <XCircle className="h-4 w-4 mr-2" />
-                End Session
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -547,17 +375,12 @@ export default function FaceAttendancePage() {
                 <Button
                   className="w-full"
                   onClick={startScanning}
-                  disabled={status !== "ready" || !selectedSubject || !selectedPeriod || !sessionActive}
+                  disabled={status !== "ready" || !selectedSubject || !selectedPeriod}
                 >
                   {status === "loading" ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Loading...
-                    </>
-                  ) : !sessionActive ? (
-                    <>
-                      <AlertTriangle className="h-4 w-4 mr-2" />
-                      Start Session First
                     </>
                   ) : (
                     <>

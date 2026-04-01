@@ -21,44 +21,47 @@
 
 ## Overview
 
-CSSE Super Student App is a 360-degree tool designed for teachers and administrators to manage student attendance, track compliance, and generate official documentation. Built for the Department of CSSE at Andhra University, this application streamlines academic operations with modern web technologies.
-
-**Live Demo:** [https://csse-super-students.vercel.app](https://csse-super-students.vercel.app)
+CSSE Super Student App is a 360-degree tool designed for teachers, HODs, and students to manage student attendance, track compliance, and generate official documentation. Built for the Department of CSSE at Andhra University, this application streamlines academic operations with modern web technologies.
 
 ---
 
 ## Features
 
-### Dual Portal System
+### Three Portal System
 
-#### Admin/Faculty Portal
+#### Faculty Portal
 - **Dashboard**: Analytics, attendance reports, and statistics
 - **Attendance Management**:
   - Manual attendance marking
   - AI-powered Face Recognition attendance using TensorFlow.js
 - **Timetable**: View complete class schedule
 - **Assignments**: Create, edit, and manage student assignments
+
+#### HOD Portal
+- **Dashboard**: Department overview and analytics
+- **Timetable**: View class schedule
 - **Letters**: Generate official documents (bonafide, permission, etc.)
+- **Letter Approvals**: Review and approve student letter requests
 - **Alerts**: Email notifications for students below 75% attendance
 
 #### Student Portal
 - **Dashboard**: Personal attendance overview
 - **My Attendance**: View detailed attendance records
 - **Timetable**: View class schedule
-- **Assignments**: View active and past assignments
-- **Letters**: Request and generate official documents
+- **Assignments**: View active assignments and submit work
+- **Letters**: Request official documents
 - **Profile**: Student information and details
 
 ### Key Features
 
 | Feature | Description |
 |---------|-------------|
-| 🔐 **Authentication** | Secure login for both admins and students |
+ | 🔐 **Authentication** | Secure login for Faculty, HOD, and Students |
 | 🎯 **Face Recognition** | AI-powered attendance using TensorFlow.js and Teachable Machine |
 | 📊 **Analytics** | Real-time attendance statistics and reports |
 | 📧 **Email Alerts** | Automatic notifications for low attendance (<75%) |
-| 📝 **Assignment Management** | CRUD operations for assignments with due dates |
-| 📄 **Letter Generation** | Generate official university documents |
+| 📝 **Assignment Management** | Create and submit assignments with due dates |
+| 📄 **Letter Generation** | Generate and approve official university documents |
 | 🌓 **Dark/Light Mode** | Theme toggle with system preference support |
 | 📱 **Responsive Design** | Mobile-first approach for all devices |
 | 🎨 **Animated Preloader** | Custom Andhra University branded loading screen |
@@ -127,10 +130,15 @@ pnpm build
 
 ## Test Credentials
 
-### Admin/Faculty Login
+### Faculty Login
 | Email | Password |
 |-------|----------|
 | aneela@andhrauniversity.edu.in | admin123 |
+
+### HOD Login
+| Email | Password |
+|-------|----------|
+| hod@andhrauniversity.edu.in | hod123 |
 
 ### Student Login
 | Registration/Roll Number | Password |
@@ -147,14 +155,20 @@ pnpm build
 ```
 CSSE-Super-Students/
 ├── app/                      # Next.js App Router
-│   ├── (dashboard)/          # Admin routes (grouped)
-│   │   ├── attendance/       # Manual attendance page
-│   │   ├── face-attendance/  # Face recognition page
-│   │   ├── assignments/      # Assignment management
-│   │   ├── timetable/        # Timetable view
-│   │   ├── letters/          # Letter generation
-│   │   ├── alerts/           # Email alerts
-│   │   └── layout.tsx        # Admin layout
+│   ├── (faculty)/            # Faculty routes (grouped)
+│   │   ├── faculty/          # Faculty dashboard
+│   │   ├── faculty/attendance/       # Manual attendance page
+│   │   ├── faculty/face-attendance/  # Face recognition page
+│   │   ├── faculty/assignments/      # Assignment management
+│   │   ├── faculty/timetable/        # Timetable view
+│   │   └── layout.tsx        # Faculty layout
+│   ├── (hod)/                # HOD routes (grouped)
+│   │   ├── hod/              # HOD dashboard
+│   │   ├── hod/timetable/    # Timetable view
+│   │   ├── hod/letters/      # Letter generation
+│   │   ├── hod/letters/approvals/    # Letter approvals
+│   │   ├── hod/alerts/       # Email alerts
+│   │   └── layout.tsx        # HOD layout
 │   ├── (student)/            # Student routes (grouped)
 │   │   ├── student/
 │   │   │   ├── attendance/   # Student attendance view
@@ -168,14 +182,16 @@ CSSE-Super-Students/
 │   └── globals.css           # Global styles
 ├── components/               # React components
 │   ├── ui/                   # shadcn/ui components
-│   ├── app-sidebar.tsx       # Admin sidebar
+│   ├── faculty-sidebar.tsx   # Faculty sidebar
+│   ├── hod-sidebar.tsx       # HOD sidebar
 │   ├── preloader.tsx         # Loading animation
 │   ├── theme-provider.tsx    # Theme context
 │   └── theme-toggle.tsx      # Theme switcher
 ├── lib/                      # Utility functions
 │   ├── data.ts               # Student/teacher data
 │   ├── attendance-store.ts   # Attendance state
-│   └── email-service.ts      # Email functionality
+│   ├── notifications.ts      # Notifications system
+│   └── anti-proxy.ts         # Anti-proxy utilities
 ├── models/                   # AI/ML models
 │   └── face-detection/       # TensorFlow models
 ├── public/                   # Static assets
@@ -191,12 +207,17 @@ CSSE-Super-Students/
 
 ### Login Page
 <p align="center">
-  <em>Dual login system for students and faculty</em>
+  <em>Three-way login system for Faculty, HOD, and Students</em>
 </p>
 
-### Admin Dashboard
+### Faculty Dashboard
 <p align="center">
   <em>Analytics and attendance overview</em>
+</p>
+
+### HOD Dashboard
+<p align="center">
+  <em>Department overview and letter approvals</em>
 </p>
 
 ### Face Recognition
@@ -223,7 +244,7 @@ CSSE-Super-Students/
 
 ### Environment Variables
 
-No environment variables are required for basic deployment. The app uses in-memory data storage.
+No environment variables are required for basic deployment. The app uses in-memory data storage and localStorage.
 
 ---
 
@@ -242,10 +263,16 @@ No environment variables are required for basic deployment. The app uses in-memo
 - Lists at-risk students
 
 ### Assignment Management
-- CRUD operations (Create, Read, Update, Delete)
-- Due date tracking with overdue indicators
-- Subject-wise organization
-- Active/closed status management
+- Faculty: Create and manage assignments with due dates
+- Students: View and submit assignments
+- Status tracking (Active/Closed)
+- Overdue indicators
+
+### Letter Generation
+- Students can request official letters
+- HOD reviews and approves/rejects requests
+- Automatic serial number generation
+- Official letter templates
 
 ### Theme Toggle
 - Light mode, Dark mode, and System preference
@@ -276,8 +303,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Contact
 
-**Developer**: Sampath Satya Saran
-**Email**: sampathlox@gmail.com
+**Developer**: Sampath Satya Saran<br>
+**Email**: sampathlox@gmail.com<br>
 **GitHub**: [@Sampath0411](https://github.com/Sampath0411)
 
 ---
