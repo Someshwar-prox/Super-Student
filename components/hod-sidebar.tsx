@@ -4,18 +4,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
-  ClipboardCheck,
   FileText,
+  CheckCircle2,
   GraduationCap,
   Menu,
   X,
   LogOut,
   Home,
   Calendar,
-  ScanFace,
   Bell,
-  BookOpen,
-  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -26,65 +23,53 @@ import { type Teacher } from "@/lib/data";
 const navItems = [
   {
     title: "Dashboard",
-    href: "/dashboard",
+    href: "/hod",
     icon: LayoutDashboard,
     description: "Analytics & Reports",
   },
   {
-    title: "Attendance",
-    href: "/attendance",
-    icon: ClipboardCheck,
-    description: "Mark Attendance",
-  },
-  {
-    title: "Face Attendance",
-    href: "/face-attendance",
-    icon: ScanFace,
-    description: "AI Face Recognition",
-  },
-  {
     title: "Timetable",
-    href: "/timetable",
+    href: "/hod/timetable",
     icon: Calendar,
     description: "Class Schedule",
   },
   {
-    title: "Assignments",
-    href: "/assignments",
-    icon: BookOpen,
-    description: "Manage Assignments",
-  },
-  {
     title: "Letters",
-    href: "/letters",
+    href: "/hod/letters",
     icon: FileText,
     description: "Generate Documents",
   },
   {
     title: "Letter Approvals",
-    href: "/letters/approvals",
+    href: "/hod/letters/approvals",
     icon: CheckCircle2,
     description: "Review Requests",
   },
   {
     title: "Alerts",
-    href: "/alerts",
+    href: "/hod/alerts",
     icon: Bell,
     description: "Email Notifications",
   },
 ];
 
-export function AppSidebar() {
+export function HODSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [admin, setAdmin] = useState<Teacher | null>(null);
+  const [hod, setHOD] = useState<Teacher | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedAdmin = sessionStorage.getItem("adminUser");
-    if (storedAdmin) {
-      setAdmin(JSON.parse(storedAdmin));
+    const storedHOD = sessionStorage.getItem("hodUser");
+    if (storedHOD) {
+      const parsed = JSON.parse(storedHOD);
+      // Ensure this is an HOD user
+      if (parsed.role === "hod") {
+        setHOD(parsed);
+      } else {
+        router.push("/login");
+      }
     } else {
       router.push("/login");
     }
@@ -92,7 +77,7 @@ export function AppSidebar() {
   }, [router]);
 
   const handleLogout = () => {
-    sessionStorage.removeItem("adminUser");
+    sessionStorage.removeItem("hodUser");
     router.push("/login");
   };
 
@@ -104,7 +89,7 @@ export function AppSidebar() {
     );
   }
 
-  if (!admin) {
+  if (!hod) {
     return null;
   }
 
@@ -116,7 +101,7 @@ export function AppSidebar() {
           <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
             <GraduationCap className="h-5 w-5 text-sidebar-primary-foreground" />
           </div>
-          <span className="font-bold text-sidebar-foreground">Admin Portal</span>
+          <span className="font-bold text-sidebar-foreground">HOD Portal</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="lg:hidden">
@@ -164,7 +149,7 @@ export function AppSidebar() {
               <GraduationCap className="h-6 w-6 text-sidebar-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-sidebar-foreground">Admin Portal</h1>
+              <h1 className="font-bold text-sidebar-foreground">HOD Portal</h1>
               <p className="text-xs text-sidebar-foreground/60">CSSE - Andhra University</p>
             </div>
           </div>
@@ -196,7 +181,7 @@ export function AppSidebar() {
                 </Link>
               );
             })}
-            
+
             <div className="pt-4">
               <p className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-4">
                 Quick Links
@@ -219,11 +204,11 @@ export function AppSidebar() {
           <div className="p-4 border-t border-sidebar-border space-y-3">
             <div className="flex items-center gap-3 px-3 py-2 bg-sidebar-accent/30 rounded-lg">
               <div className="w-10 h-10 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground font-semibold">
-                {admin.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                {hod.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">{admin.name}</p>
-                <p className="text-xs text-sidebar-foreground/60 truncate">{admin.department}</p>
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{hod.name}</p>
+                <p className="text-xs text-sidebar-foreground/60 truncate">{hod.designation}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

@@ -1,13 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Calendar, Award, Clock, CheckCircle2, AlertCircle } from "lucide-react";
-import { assignments, subjects, type Assignment } from "@/lib/data";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { BookOpen, Calendar, Award, Clock, CheckCircle2, AlertCircle, Upload, FileText } from "lucide-react";
+import { assignments, subjects, type Assignment, type Student } from "@/lib/data";
+
+interface AssignmentSubmission {
+  assignmentId: string;
+  studentId: string;
+  submittedAt: string;
+  content: string;
+  status: "submitted" | "graded";
+  marks?: number;
+}
+
+const SUBMISSIONS_KEY = "assignment_submissions";
 
 export default function StudentAssignmentsPage() {
   const [assignmentList] = useState<Assignment[]>(assignments);
+  const [student, setStudent] = useState<Student | null>(null);
+  const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const [submissionContent, setSubmissionContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+
+  useEffect(() => {
+    const storedStudent = sessionStorage.getItem("studentUser");
+    if (storedStudent) {
+      setStudent(JSON.parse(storedStudent));
+    }
+
+    // Load submissions from localStorage
+    const storedSubmissions = localStorage.getItem(SUBMISSIONS_KEY);
+    if (storedSubmissions) {
+      setSubmissions(JSON.parse(storedSubmissions));
+    }
+  }, []);
+
+  const saveSubmissions = (newSubmissions: AssignmentSubmission[]) => {
+    localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(newSubmissions));
+    setSubmissions(newSubmissions);
+  };
+
+  const hasSubmitted = (assignmentId: string) => {
+    if (!student) return false;
+    return submissions.some(s => s.assignmentId === assignmentId && s.studentId === student.id);
+  };
+
+  const getSubmission = (assignmentId: string) => {
+    if (!student) return null;
+    return submissions.find(s => s.assignmentId === assignmentId && s.studentId === student.id);
+  };
 
   const getSubjectName = (subjectId: string) => {
     const subject = subjects.find(s => s.id === subjectId);
@@ -29,6 +77,36 @@ export default function StudentAssignmentsPage() {
       month: "short",
       year: "numeric",
     });
+  };
+
+  const handleSubmit = () => {
+    if (!student || !selectedAssignment || !submissionContent.trim()) return;
+
+    setIsSubmitting(true);
+
+    const newSubmission: AssignmentSubmission = {
+      assignmentId: selectedAssignment.id,
+      studentId: student.id,
+      submittedAt: new Date().toISOString(),
+      content: submissionContent,
+      status: "submitted",
+    };
+
+    const updatedSubmissions = [...submissions, newSubmission];
+    saveSubmissions(updatedSubmissions);
+
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setShowSubmitDialog(false);
+      setSubmissionContent("");
+      setSelectedAssignment(null);
+    }, 1000);
+  };
+
+  const openSubmitDialog = (assignment: Assignment) => {
+    setSelectedAssignment(assignment);
+    setSubmissionContent("");
+    setShowSubmitDialog(true);
   };
 
   const activeAssignments = assignmentList.filter(a => a.status === "active");
@@ -103,6 +181,29 @@ export default function StudentAssignmentsPage() {
                           {assignment.maxMarks} marks
                         </span>
                       </div>
+
+                      {/* Submit Button */}
+                      {hasSubmitted(assignment.id) ? (
+                        <div className="mt-4 flex items-center gap-2">
+                          <Badge variant="default" className="bg-green-600">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Submitted
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(getSubmission(assignment.id)?.submittedAt || "").toLocaleString()}
+                          </span>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="mt-4"
+                          onClick={() => openSubmitDialog(assignment)}
+                          disabled={isOverdue(assignment.dueDate)}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Submit Assignment
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -133,46 +234,116 @@ export default function StudentAssignmentsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {closedAssignments.map((assignment) => (
-                <div
-                  key={assignment.id}
-                  className="p-4 border rounded-lg bg-muted/30"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-muted-foreground">{assignment.title}</span>
-                        <Badge variant="secondary">{getSubjectCode(assignment.subjectId)}</Badge>
-                        <Badge variant="secondary" className="bg-gray-100 text-gray-600">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Closed
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {getSubjectName(assignment.subjectId)}
-                      </p>
-                      <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          Due: {formatDate(assignment.dueDate)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Award className="h-4 w-4" />
-                          {assignment.maxMarks} marks
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          Created: {formatDate(assignment.createdAt)}
-                        </span>
+              {closedAssignments.map((assignment) => {
+                const submission = getSubmission(assignment.id);
+                return (
+                  <div
+                    key={assignment.id}
+                    className="p-4 border rounded-lg bg-muted/30"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-muted-foreground">{assignment.title}</span>
+                          <Badge variant="secondary">{getSubjectCode(assignment.subjectId)}</Badge>
+                          <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Closed
+                          </Badge>
+                          {submission && (
+                            <Badge variant="default" className="bg-green-600">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Submitted
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {getSubjectName(assignment.subjectId)}
+                        </p>
+                        <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            Due: {formatDate(assignment.dueDate)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Award className="h-4 w-4" />
+                            {assignment.maxMarks} marks
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            Created: {formatDate(assignment.createdAt)}
+                          </span>
+                        </div>
+                        {submission && (
+                          <p className="text-xs text-green-600 mt-2">
+                            Submitted on: {new Date(submission.submittedAt).toLocaleString()}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Submit Assignment Dialog */}
+      <Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Submit Assignment
+            </DialogTitle>
+            <DialogDescription>
+              {selectedAssignment && (
+                <span>
+                  {selectedAssignment.title} - {getSubjectName(selectedAssignment.subjectId)}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Your Submission</label>
+              <Textarea
+                value={submissionContent}
+                onChange={(e) => setSubmissionContent(e.target.value)}
+                placeholder="Enter your assignment submission here..."
+                rows={6}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Max Marks: {selectedAssignment?.maxMarks}
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSubmitDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!submissionContent.trim() || isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin mr-2">&#9696;</span>
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Submit Assignment
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

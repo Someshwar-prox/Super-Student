@@ -22,12 +22,19 @@ import { validateTeacherLogin, validateStudentLogin } from "@/lib/data";
 export default function LoginPage() {
   const router = useRouter();
 
-  // Admin login state
-  const [adminEmail, setAdminEmail] = useState("");
-  const [adminPassword, setAdminPassword] = useState("");
-  const [showAdminPassword, setShowAdminPassword] = useState(false);
-  const [adminError, setAdminError] = useState("");
-  const [adminLoading, setAdminLoading] = useState(false);
+  // Faculty login state
+  const [facultyEmail, setFacultyEmail] = useState("");
+  const [facultyPassword, setFacultyPassword] = useState("");
+  const [showFacultyPassword, setShowFacultyPassword] = useState(false);
+  const [facultyError, setFacultyError] = useState("");
+  const [facultyLoading, setFacultyLoading] = useState(false);
+
+  // HOD login state
+  const [hodEmail, setHODEmail] = useState("");
+  const [hodPassword, setHODPassword] = useState("");
+  const [showHODPassword, setShowHODPassword] = useState(false);
+  const [hodError, setHODError] = useState("");
+  const [hodLoading, setHODLoading] = useState(false);
 
   // Student login state
   const [studentId, setStudentId] = useState("");
@@ -36,22 +43,48 @@ export default function LoginPage() {
   const [studentError, setStudentError] = useState("");
   const [studentLoading, setStudentLoading] = useState(false);
 
-  const handleAdminLogin = async () => {
-    setAdminError("");
-    setAdminLoading(true);
+  const handleFacultyLogin = async () => {
+    setFacultyError("");
+    setFacultyLoading(true);
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const teacher = validateTeacherLogin(adminEmail, adminPassword);
+    const teacher = validateTeacherLogin(facultyEmail, facultyPassword);
 
     if (teacher) {
-      sessionStorage.setItem("adminUser", JSON.stringify(teacher));
-      router.push("/dashboard");
+      if (teacher.role === "hod") {
+        setFacultyError("HOD accounts should use the HOD login tab.");
+      } else {
+        sessionStorage.setItem("facultyUser", JSON.stringify(teacher));
+        router.push("/faculty");
+      }
     } else {
-      setAdminError("Invalid email or password.");
+      setFacultyError("Invalid email or password.");
     }
 
-    setAdminLoading(false);
+    setFacultyLoading(false);
+  };
+
+  const handleHODLogin = async () => {
+    setHODError("");
+    setHODLoading(true);
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const teacher = validateTeacherLogin(hodEmail, hodPassword);
+
+    if (teacher) {
+      if (teacher.role !== "hod") {
+        setHODError("Faculty accounts should use the Faculty login tab.");
+      } else {
+        sessionStorage.setItem("hodUser", JSON.stringify(teacher));
+        router.push("/hod");
+      }
+    } else {
+      setHODError("Invalid email or password.");
+    }
+
+    setHODLoading(false);
   };
 
   const handleStudentLogin = async () => {
@@ -101,14 +134,18 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="student" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
                 <TabsTrigger value="student" className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4" />
                   Student
                 </TabsTrigger>
-                <TabsTrigger value="admin" className="flex items-center gap-2">
+                <TabsTrigger value="faculty" className="flex items-center gap-2">
                   <UserCog className="h-4 w-4" />
-                  Admin/Faculty
+                  Faculty
+                </TabsTrigger>
+                <TabsTrigger value="hod" className="flex items-center gap-2">
+                  <UserCog className="h-4 w-4" />
+                  HOD
                 </TabsTrigger>
               </TabsList>
 
@@ -188,38 +225,38 @@ export default function LoginPage() {
                 </div>
               </TabsContent>
 
-              {/* Admin/Faculty Login */}
-              <TabsContent value="admin" className="space-y-4">
+              {/* Faculty Login */}
+              <TabsContent value="faculty" className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="adminEmail">Email Address</Label>
+                  <Label htmlFor="facultyEmail">Email Address</Label>
                   <Input
-                    id="adminEmail"
+                    id="facultyEmail"
                     type="email"
                     placeholder="faculty@andhrauniversity.edu.in"
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
+                    value={facultyEmail}
+                    onChange={(e) => setFacultyEmail(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="adminPassword">Password</Label>
+                  <Label htmlFor="facultyPassword">Password</Label>
                   <div className="relative">
                     <Input
-                      id="adminPassword"
-                      type={showAdminPassword ? "text" : "password"}
+                      id="facultyPassword"
+                      type={showFacultyPassword ? "text" : "password"}
                       placeholder="Enter password"
-                      value={adminPassword}
-                      onChange={(e) => setAdminPassword(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAdminLogin()}
+                      value={facultyPassword}
+                      onChange={(e) => setFacultyPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleFacultyLogin()}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowAdminPassword(!showAdminPassword)}
+                      onClick={() => setShowFacultyPassword(!showFacultyPassword)}
                     >
-                      {showAdminPassword ? (
+                      {showFacultyPassword ? (
                         <EyeOff className="h-4 w-4 text-muted-foreground" />
                       ) : (
                         <Eye className="h-4 w-4 text-muted-foreground" />
@@ -228,19 +265,19 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {adminError && (
+                {facultyError && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{adminError}</AlertDescription>
+                    <AlertDescription>{facultyError}</AlertDescription>
                   </Alert>
                 )}
 
                 <Button
-                  onClick={handleAdminLogin}
+                  onClick={handleFacultyLogin}
                   className="w-full"
-                  disabled={!adminEmail.trim() || !adminPassword.trim() || adminLoading}
+                  disabled={!facultyEmail.trim() || !facultyPassword.trim() || facultyLoading}
                 >
-                  {adminLoading ? (
+                  {facultyLoading ? (
                     <>
                       <span className="animate-spin mr-2">&#9696;</span>
                       Signing in...
@@ -248,7 +285,7 @@ export default function LoginPage() {
                   ) : (
                     <>
                       <LogIn className="h-4 w-4 mr-2" />
-                      Sign In as Admin
+                      Sign In as Faculty
                     </>
                   )}
                 </Button>
@@ -257,6 +294,79 @@ export default function LoginPage() {
                   <p className="font-medium mb-1">Test Faculty Accounts:</p>
                   <ul className="text-muted-foreground text-xs space-y-0.5">
                     <li>aneela@andhrauniversity.edu.in / <code className="bg-muted px-1 rounded">admin123</code></li>
+                  </ul>
+                </div>
+              </TabsContent>
+
+              {/* HOD Login */}
+              <TabsContent value="hod" className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hodEmail">Email Address</Label>
+                  <Input
+                    id="hodEmail"
+                    type="email"
+                    placeholder="hod@andhrauniversity.edu.in"
+                    value={hodEmail}
+                    onChange={(e) => setHODEmail(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hodPassword">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="hodPassword"
+                      type={showHODPassword ? "text" : "password"}
+                      placeholder="Enter password"
+                      value={hodPassword}
+                      onChange={(e) => setHODPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleHODLogin()}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowHODPassword(!showHODPassword)}
+                    >
+                      {showHODPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {hodError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{hodError}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  onClick={handleHODLogin}
+                  className="w-full"
+                  disabled={!hodEmail.trim() || !hodPassword.trim() || hodLoading}
+                >
+                  {hodLoading ? (
+                    <>
+                      <span className="animate-spin mr-2">&#9696;</span>
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Sign In as HOD
+                    </>
+                  )}
+                </Button>
+
+                <div className="rounded-lg bg-muted/50 p-3 text-sm">
+                  <p className="font-medium mb-1">Test HOD Account:</p>
+                  <ul className="text-muted-foreground text-xs space-y-0.5">
+                    <li>hod@andhrauniversity.edu.in / <code className="bg-muted px-1 rounded">hod123</code></li>
                   </ul>
                 </div>
               </TabsContent>

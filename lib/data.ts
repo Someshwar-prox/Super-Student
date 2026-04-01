@@ -45,6 +45,7 @@ export interface Teacher {
   department: string;
   designation: string;
   password: string; // For demo purposes - in production use proper auth
+  role: "faculty" | "hod"; // Role for portal access
 }
 
 export interface AttendanceRecord {
@@ -93,15 +94,16 @@ export const timeSlots: TimeSlot[] = [
 
 // Teachers (based on actual timetable)
 export const teachers: Teacher[] = [
-  { id: "T001", name: "Ms. D. Aneela", email: "aneela@andhrauniversity.edu.in", department: "CSSE", designation: "Research Scholar", password: "admin123" },
-  { id: "T002", name: "Mrs. B. Sunanda", email: "sunanda@andhrauniversity.edu.in", department: "CSSE", designation: "SWTA Faculty", password: "admin123" },
-  { id: "T003", name: "Dr. G. Sandhya Devi", email: "sandhya@andhrauniversity.edu.in", department: "CSSE", designation: "Adjunct Faculty", password: "admin123" },
-  { id: "T004", name: "Mr. S. Rajesh Kumar", email: "rajesh@andhrauniversity.edu.in", department: "CSSE", designation: "SWTA Faculty", password: "admin123" },
-  { id: "T005", name: "Ms. S. Sireesha", email: "sireesha@andhrauniversity.edu.in", department: "CSSE", designation: "SWTA Faculty", password: "admin123" },
-  { id: "T006", name: "Mrs. K. Sri Vaishnavi", email: "vaishnavi@andhrauniversity.edu.in", department: "CSSE", designation: "SWTA Faculty", password: "admin123" },
-  { id: "T007", name: "Ms. Sailaja Rani Setty", email: "sailaja@andhrauniversity.edu.in", department: "CSSE", designation: "Research Scholar", password: "admin123" },
-  { id: "T008", name: "Mr. P. Swamy", email: "swamy@andhrauniversity.edu.in", department: "CSSE", designation: "Research Scholar", password: "admin123" },
-  { id: "T009", name: "Dr. N. P. Lavanya Kumari", email: "lavanya@andhrauniversity.edu.in", department: "CSSE", designation: "Faculty", password: "admin123" },
+  { id: "HOD001", name: "Dr. Valli Kumari V", email: "hod@andhrauniversity.edu.in", department: "CSSE", designation: "Professor & HOD", password: "hod123", role: "hod" },
+  { id: "T001", name: "Ms. D. Aneela", email: "aneela@andhrauniversity.edu.in", department: "CSSE", designation: "Research Scholar", password: "admin123", role: "faculty" },
+  { id: "T002", name: "Mrs. B. Sunanda", email: "sunanda@andhrauniversity.edu.in", department: "CSSE", designation: "SWTA Faculty", password: "admin123", role: "faculty" },
+  { id: "T003", name: "Dr. G. Sandhya Devi", email: "sandhya@andhrauniversity.edu.in", department: "CSSE", designation: "Adjunct Faculty", password: "admin123", role: "faculty" },
+  { id: "T004", name: "Mr. S. Rajesh Kumar", email: "rajesh@andhrauniversity.edu.in", department: "CSSE", designation: "SWTA Faculty", password: "admin123", role: "faculty" },
+  { id: "T005", name: "Ms. S. Sireesha", email: "sireesha@andhrauniversity.edu.in", department: "CSSE", designation: "SWTA Faculty", password: "admin123", role: "faculty" },
+  { id: "T006", name: "Mrs. K. Sri Vaishnavi", email: "vaishnavi@andhrauniversity.edu.in", department: "CSSE", designation: "SWTA Faculty", password: "admin123", role: "faculty" },
+  { id: "T007", name: "Ms. Sailaja Rani Setty", email: "sailaja@andhrauniversity.edu.in", department: "CSSE", designation: "Research Scholar", password: "admin123", role: "faculty" },
+  { id: "T008", name: "Mr. P. Swamy", email: "swamy@andhrauniversity.edu.in", department: "CSSE", designation: "Research Scholar", password: "admin123", role: "faculty" },
+  { id: "T009", name: "Dr. N. P. Lavanya Kumari", email: "lavanya@andhrauniversity.edu.in", department: "CSSE", designation: "Faculty", password: "admin123", role: "faculty" },
 ];
 
 // Subjects (based on actual 3/6 BTECH CSE-4 timetable)
