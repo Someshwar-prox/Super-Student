@@ -9,15 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { FileText, Send, GraduationCap, Briefcase, CreditCard, AlertCircle, CheckCircle2, Clock } from "lucide-react";
-import {
-  createLetterRequest,
-  getStudentLetterRequests,
-  subscribeToStudentLetterRequests,
-  type LetterRequestRecord,
-} from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 type LetterType = "bonafide" | "study" | "loan" | "internship";
 type RequestStatus = "pending" | "approved" | "rejected";
+
+const LETTER_REQUESTS_KEY = "letter_requests";
 
 interface LetterConfig {
   id: LetterType;
@@ -86,34 +83,30 @@ export default function StudentLettersPage() {
       setStudent(parsed);
       loadMyRequests(parsed.id);
 
-      // Subscribe to real-time updates
-      const subscription = subscribeToStudentLetterRequests(parsed.id, (payload) => {
-        if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
-          loadMyRequests(parsed.id);
-        }
-      });
+      // Listen for storage changes from other tabs
+      const handleStorageChange = () => {
+        loadMyRequests(parsed.id);
+      };
+      window.addEventListener("storage", handleStorageChange);
+
+      // Poll for updates every 2 seconds
+      const interval = setInterval(() => {
+        loadMyRequests(parsed.id);
+      }, 2000);
 
       return () => {
-        subscription.unsubscribe();
+        window.removeEventListener("storage", handleStorageChange);
+        clearInterval(interval);
       };
     }
   }, []);
 
-  const loadMyRequests = async (studentId: string) => {
-    const result = await getStudentLetterRequests(studentId);
-    if (result.success && result.data) {
-      const requests: LetterRequest[] = result.data.map((r) => ({
-        id: r.id!,
-        studentId: r.student_id,
-        studentName: r.student_name,
-        studentEmail: r.student_email,
-        letterType: r.letter_type,
-        status: r.status,
-        requestedAt: r.requested_at,
-        additionalDetails: r.additional_details,
-        serialNumber: r.serial_number,
-      }));
-      setMyRequests(requests);
+  const loadMyRequests = (studentId: string) => {
+    const stored = localStorage.getItem(LETTER_REQUESTS_KEY);
+    if (stored) {
+      const allRequests: LetterRequest[] = JSON.parse(stored);
+      const myRequests = allRequests.filter((r) => r.studentId === studentId);
+      setMyRequests(myRequests);
     }
   };
 
@@ -126,29 +119,32 @@ export default function StudentLettersPage() {
   };
 
 
-  const handleSubmitRequest = async () => {
+  const handleSubmitRequest = () => {
     if (!student || !selectedLetter) return;
 
-    setIsLoading(true);
+    const newRequest: LetterRequest = {
+      id: uuidv4(),
+      studentId: student.id,
+      studentName: student.name,
+      studentEmail: student.email || "",
+      letterType: selectedLetter,
+      status: "pending",
+      requestedAt: new Date().toISOString(),
+      additionalDetails: additionalDetails,
+    };
 
-    const result = await createLetterRequest({
-      student_id: student.id,
-      student_name: student.name,
-      student_email: student.email || "",
-      letter_type: selectedLetter,
-      additional_details: additionalDetails,
-    });
+    // Get existing requests
+    const stored = localStorage.getItem(LETTER_REQUESTS_KEY);
+    const existingRequests: LetterRequest[] = stored ? JSON.parse(stored) : [];
 
-    if (result.success) {
-      // Update local state
-      await loadMyRequests(student.id);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    } else {
-      console.error("Failed to create request:", result.error);
-    }
+    // Add new request
+    existingRequests.push(newRequest);
+    localStorage.setItem(LETTER_REQUESTS_KEY, JSON.stringify(existingRequests));
 
-    setIsLoading(false);
+    // Update local state
+    loadMyRequests(student.id);
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const getStatusBadge = (status: RequestStatus) => {

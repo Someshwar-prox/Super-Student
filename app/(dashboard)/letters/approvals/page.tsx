@@ -32,15 +32,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  getAllLetterRequests,
-  updateLetterRequestStatus,
-  subscribeToLetterRequests,
-  type LetterRequestRecord,
-} from "@/lib/supabase";
 
 type LetterType = "bonafide" | "study" | "loan" | "internship";
 type RequestStatus = "pending" | "approved" | "rejected";
+
+const LETTER_REQUESTS_KEY = "letter_requests";
+const APPROVED_LETTERS_KEY = "approved_letters";
 
 interface LetterRequest {
   id: string;
@@ -77,34 +74,27 @@ export default function LetterApprovalsPage() {
   useEffect(() => {
     loadRequests();
 
-    // Subscribe to real-time updates
-    const subscription = subscribeToLetterRequests((payload) => {
-      if (payload.eventType === "INSERT" || payload.eventType === "UPDATE" || payload.eventType === "DELETE") {
-        loadRequests();
-      }
-    });
+    // Listen for storage changes from other tabs
+    const handleStorageChange = () => {
+      loadRequests();
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    // Poll for updates every 2 seconds
+    const interval = setInterval(() => {
+      loadRequests();
+    }, 2000);
 
     return () => {
-      subscription.unsubscribe();
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
     };
   }, []);
 
-  const loadRequests = async () => {
-    const result = await getAllLetterRequests();
-    if (result.success && result.data) {
-      const allRequests: LetterRequest[] = result.data.map((r) => ({
-        id: r.id!,
-        studentId: r.student_id,
-        studentName: r.student_name,
-        studentEmail: r.student_email,
-        letterType: r.letter_type,
-        status: r.status,
-        requestedAt: r.requested_at,
-        additionalDetails: r.additional_details,
-        serialNumber: r.serial_number,
-        adminNotes: r.admin_notes,
-        processedAt: r.processed_at,
-      }));
+  const loadRequests = () => {
+    const stored = localStorage.getItem(LETTER_REQUESTS_KEY);
+    if (stored) {
+      const allRequests: LetterRequest[] = JSON.parse(stored);
       setRequests(allRequests);
     }
   };
@@ -146,25 +136,34 @@ export default function LetterApprovalsPage() {
     setShowDialog(true);
   };
 
-  const confirmApproval = async () => {
+  const confirmApproval = () => {
     if (!selectedRequest) return;
 
     const serialNumber = generateSerialNumber(selectedRequest.letterType);
+    const processedAt = new Date().toISOString();
 
-    // Update in Supabase
-    const result = await updateLetterRequestStatus(
-      selectedRequest.id,
-      "approved",
-      adminNotes,
-      serialNumber
+    // Update request status
+    const updatedRequests = requests.map((req) =>
+      req.id === selectedRequest.id
+        ? { ...req, status: "approved" as const, serialNumber, adminNotes, processedAt }
+        : req
     );
 
-    if (!result.success) {
-      setSuccessMessage("Failed to approve letter. Please try again.");
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 5000);
-      return;
-    }
+    // Save to localStorage
+    localStorage.setItem(LETTER_REQUESTS_KEY, JSON.stringify(updatedRequests));
+
+    // Add to approved letters history
+    const approvedLetter = {
+      ...selectedRequest,
+      status: "approved" as const,
+      serialNumber,
+      adminNotes,
+      processedAt,
+    };
+    const storedApproved = localStorage.getItem(APPROVED_LETTERS_KEY);
+    const approvedLetters = storedApproved ? JSON.parse(storedApproved) : [];
+    approvedLetters.push(approvedLetter);
+    localStorage.setItem(APPROVED_LETTERS_KEY, JSON.stringify(approvedLetters));
 
     // Create notification for student
     const letterTypeNames: Record<LetterType, string> = {
@@ -184,28 +183,25 @@ export default function LetterApprovalsPage() {
       letterType: selectedRequest.letterType,
     });
 
+    setRequests(updatedRequests);
     setShowDialog(false);
     setSuccessMessage(`Letter approved! Serial No: ${serialNumber}. Notification sent to student.`);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 5000);
   };
 
-  const confirmRejection = async () => {
+  const confirmRejection = () => {
     if (!selectedRequest) return;
 
-    // Update in Supabase
-    const result = await updateLetterRequestStatus(
-      selectedRequest.id,
-      "rejected",
-      adminNotes
+    const processedAt = new Date().toISOString();
+
+    const updatedRequests = requests.map((req) =>
+      req.id === selectedRequest.id
+        ? { ...req, status: "rejected" as const, adminNotes, processedAt }
+        : req
     );
 
-    if (!result.success) {
-      setSuccessMessage("Failed to reject letter. Please try again.");
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 5000);
-      return;
-    }
+    localStorage.setItem(LETTER_REQUESTS_KEY, JSON.stringify(updatedRequests));
 
     // Create notification for student
     const letterTypeNames: Record<LetterType, string> = {
@@ -223,6 +219,7 @@ export default function LetterApprovalsPage() {
       letterRequestId: selectedRequest.id,
     });
 
+    setRequests(updatedRequests);
     setShowDialog(false);
     setSuccessMessage(`Letter request rejected. Notification sent to student.`);
     setShowSuccess(true);
