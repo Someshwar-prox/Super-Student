@@ -97,11 +97,7 @@ export default function StudentLettersPage() {
         subscription.unsubscribe();
       };
     }
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [student?.id]);
+  }, []);
 
   const loadMyRequests = async (studentId: string) => {
     const result = await getStudentLetterRequests(studentId);
