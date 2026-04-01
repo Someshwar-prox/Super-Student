@@ -28,10 +28,8 @@ import {
   registerFingerprint,
   isSessionActive,
   SESSION_KEYS,
-  validateSessionCode,
-  getSharedSession,
-  parseSessionFromUrl,
 } from "@/lib/anti-proxy";
+import { getSessionFromSupabase, type SessionRecord } from "@/lib/supabase";
 import { type Student, calculateStudentAttendance, ATTENDANCE_THRESHOLD } from "@/lib/data";
 
 interface VerificationStatus {
@@ -79,24 +77,22 @@ export default function VerifyAttendancePage() {
       setStudent(JSON.parse(storedStudent));
     }
 
-    // Check for session in URL first (from QR code or shared link)
-    const urlSession = parseSessionFromUrl();
-    if (urlSession.valid && urlSession.session) {
-      setSessionActive(true);
-      setSessionFeatures({
-        otp: !!urlSession.session.otp,
-        gps: !!urlSession.session.teacherLocation,
-        device: true,
-      });
-      setSessionInfo({
-        subjectId: urlSession.session.subjectId,
-        subjectName: urlSession.session.subjectName,
-        period: urlSession.session.period,
-      });
-      setSuccessMessage("Joined session via link! Complete the verifications below.");
-    }
+    // Check for session code in URL (from QR code scan)
+    const checkUrlSession = async () => {
+      if (typeof window === "undefined") return;
+      const urlParams = new URLSearchParams(window.location.search);
+      const codeFromUrl = urlParams.get("code");
 
-    // Check session state
+      if (codeFromUrl) {
+        setSessionCodeInput(codeFromUrl);
+        // Auto-join session from URL
+        await joinSessionWithCode(codeFromUrl);
+      }
+    };
+
+    checkUrlSession();
+
+    // Check local session state
     const checkSession = () => {
       const active = isSessionActive();
       setSessionActive(active);
@@ -106,7 +102,7 @@ export default function VerifyAttendancePage() {
         setSessionFeatures({
           otp: !!session.otp,
           gps: !!session.teacherLocation,
-          device: true, // Device check is always available
+          device: true,
         });
         setSessionInfo({
           subjectId: session.subjectId,
@@ -121,41 +117,63 @@ export default function VerifyAttendancePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Join session using code
-  const joinSession = async () => {
-    if (!sessionCodeInput || sessionCodeInput.length !== 6) {
-      setErrorMessage("Please enter a valid 6-digit session code");
-      return;
-    }
-
+  // Join session using code (from Supabase)
+  const joinSessionWithCode = async (code: string) => {
     setIsJoining(true);
     setErrorMessage("");
     setSuccessMessage("");
 
     try {
-      const result = validateSessionCode(sessionCodeInput);
+      const result = await getSessionFromSupabase(code);
 
-      if (result.valid && result.session) {
+      if (result.success && result.session) {
+        const session = result.session;
+
+        // Store session locally
+        localStorage.setItem(SESSION_KEYS.sessionActive, "true");
+        localStorage.setItem(SESSION_KEYS.subjectId, session.subject_id);
+        localStorage.setItem(SESSION_KEYS.subjectName, session.subject_name);
+        localStorage.setItem(SESSION_KEYS.period, session.period.toString());
+        if (session.otp) {
+          localStorage.setItem(SESSION_KEYS.otp, session.otp);
+        }
+        if (session.otp_expiry) {
+          localStorage.setItem(SESSION_KEYS.otpExpiry, session.otp_expiry.toString());
+        }
+        if (session.teacher_location) {
+          localStorage.setItem(SESSION_KEYS.teacherLocation, JSON.stringify(session.teacher_location));
+        }
+        localStorage.setItem(SESSION_KEYS.fingerprints, JSON.stringify({}));
+
         setSessionActive(true);
         setSessionFeatures({
-          otp: !!result.session.otp,
-          gps: !!result.session.teacherLocation,
+          otp: !!session.otp,
+          gps: !!session.teacher_location,
           device: true,
         });
         setSessionInfo({
-          subjectId: result.session.subjectId,
-          subjectName: result.session.subjectName,
-          period: result.session.period,
+          subjectId: session.subject_id,
+          subjectName: session.subject_name,
+          period: session.period,
         });
         setSuccessMessage("Session joined successfully! Complete the verifications below.");
       } else {
-        setErrorMessage(result.message);
+        setErrorMessage(result.error || "Session not found. Ask your teacher to start a new session.");
       }
     } catch (err) {
       setErrorMessage("Failed to join session. Please try again.");
     }
 
     setIsJoining(false);
+  };
+
+  // Join session button handler
+  const joinSession = async () => {
+    if (!sessionCodeInput || sessionCodeInput.length !== 6) {
+      setErrorMessage("Please enter a valid 6-digit session code");
+      return;
+    }
+    await joinSessionWithCode(sessionCodeInput);
   };
 
   const verifyOTP = () => {

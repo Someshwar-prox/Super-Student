@@ -32,7 +32,9 @@ import {
 import * as tf from "@tensorflow/tfjs";
 import { subjects, students, type Student } from "@/lib/data";
 import { addAttendanceRecord } from "@/lib/attendance-store";
-import { SESSION_KEYS, generateSessionCode, generateShareableUrl, type EncodedSessionData } from "@/lib/anti-proxy";
+import { SESSION_KEYS, generateSessionCode } from "@/lib/anti-proxy";
+import { storeSessionInSupabase, endSessionInSupabase, type SessionRecord } from "@/lib/supabase";
+import { QRCodeSVG } from "qrcode.react";
 
 // Model configuration
 const MODEL_URL = "/models/face-detection/model.json";
@@ -80,9 +82,9 @@ export default function FaceAttendancePage() {
   const [teacherLocation, setTeacherLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [sessionCode, setSessionCode] = useState<string>("");
-  const [shareableUrl, setShareableUrl] = useState<string>("");
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
+  const [studentUrl, setStudentUrl] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [isStoringSession, setIsStoringSession] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -190,11 +192,13 @@ export default function FaceAttendancePage() {
   };
 
   // Start session
-  const startSession = () => {
+  const startSession = async () => {
     if (!selectedSubject || !selectedPeriod) {
       setError("Please select subject and period first");
       return;
     }
+
+    setIsStoringSession(true);
 
     // Generate unique session code for cross-device sync
     const newSessionCode = generateSessionCode();
@@ -204,7 +208,7 @@ export default function FaceAttendancePage() {
     localStorage.setItem(SESSION_KEYS.sessionActive, "true");
     localStorage.setItem(SESSION_KEYS.fingerprints, JSON.stringify({}));
 
-    // Store subject and period info
+    // Store subject and period info locally
     const subject = subjects.find(s => s.id === selectedSubject);
     localStorage.setItem(SESSION_KEYS.subjectId, selectedSubject);
     localStorage.setItem(SESSION_KEYS.subjectName, subject?.name || "");
@@ -227,40 +231,52 @@ export default function FaceAttendancePage() {
     let sessionLocation: { lat: number; lng: number } | undefined;
     if (gpsEnabled) {
       if (!teacherLocation) {
-        captureTeacherLocation();
+        await new Promise((resolve) => {
+          captureTeacherLocation();
+          setTimeout(resolve, 2000); // Wait for location
+        });
       }
       sessionLocation = teacherLocation || undefined;
     }
 
-    // Create session data for URL sharing
-    const sessionData: EncodedSessionData = {
-      subjectId: selectedSubject,
-      subjectName: subject?.name || "",
+    // Create student URL with session code
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const studentLink = `${baseUrl}/student/verify-attendance?code=${newSessionCode}`;
+    setStudentUrl(studentLink);
+
+    // Store session in Supabase for cross-device access
+    const sessionData: SessionRecord = {
+      session_code: newSessionCode,
+      subject_id: selectedSubject,
+      subject_name: subject?.name || "",
       period: parseInt(selectedPeriod),
       otp: sessionOtp,
-      otpExpiry: sessionOtpExpiry,
-      teacherLocation: sessionLocation,
-      createdAt: Date.now(),
+      otp_expiry: sessionOtpExpiry,
+      teacher_location: sessionLocation,
+      active: true,
     };
 
-    // Generate shareable URL and QR code
-    const url = generateShareableUrl(sessionData);
-    setShareableUrl(url);
+    const result = await storeSessionInSupabase(sessionData);
+    if (!result.success) {
+      setError("Failed to create session: " + result.error);
+      setSessionActive(false);
+    }
 
-    // Generate QR code
-    generateQRCode(url).then((qrDataUrl) => {
-      setQrCodeDataUrl(qrDataUrl);
-    });
+    setIsStoringSession(false);
   };
 
   // End session
-  const endSession = () => {
+  const endSession = async () => {
+    // End session in Supabase
+    if (sessionCode) {
+      await endSessionInSupabase(sessionCode);
+    }
+
     setSessionActive(false);
     setOtp("");
     setOtpTimeLeft(0);
     setSessionCode("");
-    setShareableUrl("");
-    setQrCodeDataUrl("");
+    setStudentUrl("");
     setCopied(false);
     // Clear session data
     Object.values(SESSION_KEYS).forEach((key) => localStorage.removeItem(key));
@@ -416,63 +432,9 @@ export default function FaceAttendancePage() {
     stopWebcam();
   };
 
-  // Generate QR code as data URL
-  const generateQRCode = async (text: string): Promise<string> => {
-    // Simple QR code generation using canvas
-    const canvas = document.createElement("canvas");
-    const size = 256;
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
-
-    // Fill white background
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, size, size);
-
-    // Draw a simple pattern (simulated QR code pattern)
-    ctx.fillStyle = "black";
-    const cellSize = size / 25;
-
-    // Draw finder patterns (corners)
-    const drawFinder = (x: number, y: number) => {
-      ctx.fillRect(x * cellSize, y * cellSize, 7 * cellSize, 7 * cellSize);
-      ctx.fillStyle = "white";
-      ctx.fillRect((x + 1) * cellSize, (y + 1) * cellSize, 5 * cellSize, 5 * cellSize);
-      ctx.fillStyle = "black";
-      ctx.fillRect((x + 2) * cellSize, (y + 2) * cellSize, 3 * cellSize, 3 * cellSize);
-    };
-
-    drawFinder(1, 1);
-    drawFinder(17, 1);
-    drawFinder(1, 17);
-
-    // Draw data pattern based on text hash
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      hash = ((hash << 5) - hash) + text.charCodeAt(i);
-      hash = hash & hash;
-    }
-
-    for (let i = 0; i < 100; i++) {
-      const x = 8 + (i % 14);
-      const y = 8 + Math.floor(i / 14);
-      if ((hash >> (i % 32)) & 1) {
-        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-      }
-    }
-
-    // Add text at bottom
-    ctx.fillStyle = "black";
-    ctx.font = "12px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("Scan to join session", size / 2, size - 8);
-
-    return canvas.toDataURL("image/png");
-  };
-
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(shareableUrl);
+      await navigator.clipboard.writeText(studentUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -589,28 +551,25 @@ export default function FaceAttendancePage() {
           )}
 
           {/* Session Sharing Display (when active) */}
-          {sessionActive && shareableUrl && (
+          {sessionActive && studentUrl && (
             <div className="p-6 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg border-2 border-primary/30">
               <div className="text-center mb-4">
                 <p className="text-lg font-semibold text-foreground mb-1">Share with Students</p>
-                <p className="text-sm text-muted-foreground">Scan QR code or click link to join</p>
+                <p className="text-sm text-muted-foreground">Scan QR code to join instantly</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
                 {/* QR Code */}
                 <div className="flex flex-col items-center">
-                  {qrCodeDataUrl && (
-                    <>
-                      <div className="bg-white p-4 rounded-lg shadow-inner">
-                        <img
-                          src={qrCodeDataUrl}
-                          alt="Session QR Code"
-                          className="w-48 h-48"
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">Scan to join instantly</p>
-                    </>
-                  )}
+                  <div className="bg-white p-4 rounded-lg shadow-inner">
+                    <QRCodeSVG
+                      value={studentUrl}
+                      size={192}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Scan with camera to join</p>
                 </div>
 
                 {/* Session Code and Link */}
@@ -626,7 +585,7 @@ export default function FaceAttendancePage() {
                     <p className="text-sm text-muted-foreground text-center">Or share link</p>
                     <div className="flex gap-2">
                       <Input
-                        value={shareableUrl}
+                        value={studentUrl}
                         readOnly
                         className="text-xs"
                       />
@@ -765,10 +724,19 @@ export default function FaceAttendancePage() {
               <Button
                 size="lg"
                 onClick={startSession}
-                disabled={gpsEnabled && !teacherLocation}
+                disabled={(gpsEnabled && !teacherLocation) || isStoringSession}
               >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Start Attendance Session
+                {isStoringSession ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating Session...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Start Attendance Session
+                  </>
+                )}
               </Button>
             ) : (
               <Button variant="destructive" size="lg" onClick={endSession}>
