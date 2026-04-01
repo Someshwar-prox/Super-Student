@@ -1,22 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Pencil, Trash2, BookOpen, Calendar, Award, Clock, CheckCircle2 } from "lucide-react";
-import { assignments, subjects, type Assignment } from "@/lib/data";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Pencil, Trash2, BookOpen, Calendar, Award, Clock, CheckCircle2, Users, Save, XCircle, UserCheck } from "lucide-react";
+import { assignments, subjects, students, type Assignment, type Teacher } from "@/lib/data";
+import {
+  getSubmissions,
+  markAssignmentAsSubmitted,
+  unmarkAssignmentAsSubmitted,
+  getAssignmentSubmissionStats,
+  type AssignmentSubmission
+} from "@/lib/assignment-submissions-store";
 
 export default function AssignmentsPage() {
   const [assignmentList, setAssignmentList] = useState<Assignment[]>(assignments);
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [faculty, setFaculty] = useState<Teacher | null>(null);
+  const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
+  const [selectedAssignmentForMarking, setSelectedAssignmentForMarking] = useState<Assignment | null>(null);
+  const [markingRemark, setMarkingRemark] = useState("");
+  const [showMarkingDialog, setShowMarkingDialog] = useState(false);
+  const [studentSubmissions, setStudentSubmissions] = useState<Map<string, boolean>>(new Map());
 
   const [formData, setFormData] = useState({
     title: "",
@@ -25,6 +40,18 @@ export default function AssignmentsPage() {
     dueDate: "",
     maxMarks: "",
   });
+
+  useEffect(() => {
+    const storedFaculty = sessionStorage.getItem("facultyUser");
+    if (storedFaculty) {
+      setFaculty(JSON.parse(storedFaculty));
+    }
+    loadSubmissions();
+  }, []);
+
+  const loadSubmissions = () => {
+    setSubmissions(getSubmissions());
+  };
 
   const getSubjectName = (subjectId: string) => {
     const subject = subjects.find(s => s.id === subjectId);
@@ -111,6 +138,66 @@ export default function AssignmentsPage() {
       year: "numeric",
     });
   };
+
+  const openMarkingDialog = (assignment: Assignment) => {
+    setSelectedAssignmentForMarking(assignment);
+    setMarkingRemark("");
+
+    // Load current submission status for all students
+    const currentSubmissions = new Map<string, boolean>();
+    students.forEach(student => {
+      const hasSubmitted = submissions.some(
+        s => s.assignmentId === assignment.id && s.studentId === student.id
+      );
+      currentSubmissions.set(student.id, hasSubmitted);
+    });
+    setStudentSubmissions(currentSubmissions);
+    setShowMarkingDialog(true);
+  };
+
+  const toggleStudentSubmission = (studentId: string, checked: boolean) => {
+    setStudentSubmissions(prev => {
+      const newMap = new Map(prev);
+      newMap.set(studentId, checked);
+      return newMap;
+    });
+  };
+
+  const saveMarkingChanges = () => {
+    if (!selectedAssignmentForMarking || !faculty) return;
+
+    students.forEach(student => {
+      const shouldBeSubmitted = studentSubmissions.get(student.id) || false;
+      const currentlySubmitted = submissions.some(
+        s => s.assignmentId === selectedAssignmentForMarking.id && s.studentId === student.id
+      );
+
+      if (shouldBeSubmitted && !currentlySubmitted) {
+        // Mark as submitted
+        markAssignmentAsSubmitted(
+          selectedAssignmentForMarking.id,
+          student.id,
+          faculty.id,
+          faculty.name,
+          markingRemark || undefined
+        );
+      } else if (!shouldBeSubmitted && currentlySubmitted) {
+        // Remove submission
+        unmarkAssignmentAsSubmitted(selectedAssignmentForMarking.id, student.id);
+      }
+    });
+
+    loadSubmissions();
+    setShowMarkingDialog(false);
+    setSelectedAssignmentForMarking(null);
+  };
+
+  const getSubmissionCount = (assignmentId: string) => {
+    return submissions.filter(s => s.assignmentId === assignmentId).length;
+  };
+
+  const activeAssignments = assignmentList.filter(a => a.status === "active");
+  const closedAssignments = assignmentList.filter(a => a.status === "closed");
 
   return (
     <div className="space-y-6">
@@ -211,84 +298,310 @@ export default function AssignmentsPage() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Assignments</CardTitle>
-          <CardDescription>
-            {assignmentList.length} assignment{assignmentList.length !== 1 ? 's' : ''} total
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[600px]">
-            <div className="space-y-3">
-              {assignmentList.map((assignment) => (
-                <div
-                  key={assignment.id}
-                  className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium">{assignment.title}</span>
-                      <Badge variant="secondary">{getSubjectCode(assignment.subjectId)}</Badge>
-                      {assignment.status === "closed" ? (
-                        <Badge variant="secondary" className="bg-gray-100 text-gray-600">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Closed
-                        </Badge>
-                      ) : isOverdue(assignment.dueDate) ? (
-                        <Badge variant="destructive">Overdue</Badge>
-                      ) : (
-                        <Badge variant="default" className="bg-green-100 text-green-700 hover:bg-green-100">
-                          Active
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {getSubjectName(assignment.subjectId)}
-                    </p>
-                    {assignment.description && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                        {assignment.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        Due: {formatDate(assignment.dueDate)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Award className="h-4 w-4" />
-                        {assignment.maxMarks} marks
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        Created: {formatDate(assignment.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleOpenEdit(assignment)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(assignment.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+      <Tabs defaultValue="active" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="active">
+            Active Assignments
+            <Badge variant="secondary" className="ml-2">{activeAssignments.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="closed">
+            Closed Assignments
+            <Badge variant="secondary" className="ml-2">{closedAssignments.length}</Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Assignments</CardTitle>
+              <CardDescription>
+                Currently open assignments. Click "Mark Submissions" to toggle student submissions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-3">
+                  {activeAssignments.map((assignment) => {
+                    const submissionCount = getSubmissionCount(assignment.id);
+                    const submissionPercentage = Math.round((submissionCount / students.length) * 100);
+
+                    return (
+                      <div
+                        key={assignment.id}
+                        className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium">{assignment.title}</span>
+                            <Badge variant="secondary">{getSubjectCode(assignment.subjectId)}</Badge>
+                            {isOverdue(assignment.dueDate) ? (
+                              <Badge variant="destructive">Overdue</Badge>
+                            ) : (
+                              <Badge variant="default" className="bg-green-100 text-green-700 hover:bg-green-100">
+                                Active
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {getSubjectName(assignment.subjectId)}
+                          </p>
+                          {assignment.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {assignment.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              Due: {formatDate(assignment.dueDate)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Award className="h-4 w-4" />
+                              {assignment.maxMarks} marks
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="h-4 w-4" />
+                              {submissionCount}/{students.length} submitted ({submissionPercentage}%)
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openMarkingDialog(assignment)}
+                            className="text-primary"
+                          >
+                            <UserCheck className="h-4 w-4 mr-1" />
+                            Mark Submissions
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenEdit(assignment)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(assignment.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="closed" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Closed Assignments</CardTitle>
+              <CardDescription>
+                Past assignments that are now closed
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-3">
+                  {closedAssignments.map((assignment) => {
+                    const submissionCount = getSubmissionCount(assignment.id);
+                    const submissionPercentage = Math.round((submissionCount / students.length) * 100);
+
+                    return (
+                      <div
+                        key={assignment.id}
+                        className="flex items-start justify-between p-4 border rounded-lg bg-muted/30"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-muted-foreground">{assignment.title}</span>
+                            <Badge variant="secondary">{getSubjectCode(assignment.subjectId)}</Badge>
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Closed
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {getSubjectName(assignment.subjectId)}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              Due: {formatDate(assignment.dueDate)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Award className="h-4 w-4" />
+                              {assignment.maxMarks} marks
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="h-4 w-4" />
+                              {submissionCount}/{students.length} submitted ({submissionPercentage}%)
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openMarkingDialog(assignment)}
+                          >
+                            <UserCheck className="h-4 w-4 mr-1" />
+                            View/Mark
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(assignment.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Marking Dialog */}
+      <Dialog open={showMarkingDialog} onOpenChange={setShowMarkingDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5" />
+              Mark Student Submissions
+            </DialogTitle>
+            <DialogDescription>
+              {selectedAssignmentForMarking && (
+                <span>
+                  {selectedAssignmentForMarking.title} - {getSubjectName(selectedAssignmentForMarking.subjectId)}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedAssignmentForMarking && (
+            <div className="py-4 space-y-4">
+              {/* Stats */}
+              <div className="flex items-center gap-4 p-3 bg-muted rounded-lg">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Total Students</p>
+                  <p className="text-xl font-bold">{students.length}</p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Submitted</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {getSubmissionCount(selectedAssignmentForMarking.id)}
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Not Submitted</p>
+                  <p className="text-xl font-bold text-red-600">
+                    {students.length - getSubmissionCount(selectedAssignmentForMarking.id)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Remark */}
+              <div>
+                <Label htmlFor="remark">Remark (optional - applies to all newly marked submissions)</Label>
+                <Input
+                  id="remark"
+                  placeholder="e.g., Submitted via email, Hard copy received..."
+                  value={markingRemark}
+                  onChange={(e) => setMarkingRemark(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+
+              {/* Student List */}
+              <div className="border rounded-lg">
+                <div className="p-3 bg-muted border-b flex items-center justify-between">
+                  <span className="font-medium">Student</span>
+                  <span className="font-medium">Submitted</span>
+                </div>
+                <ScrollArea className="h-[300px]">
+                  <div className="divide-y">
+                    {students.map((student) => {
+                      const isSubmitted = studentSubmissions.get(student.id) || false;
+                      return (
+                        <div
+                          key={student.id}
+                          className="flex items-center justify-between p-3 hover:bg-muted/50"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                              {student.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-medium">{student.name}</p>
+                              <p className="text-xs text-muted-foreground">Roll: {student.rollNumber}</p>
+                            </div>
+                          </div>
+                          <Checkbox
+                            checked={isSubmitted}
+                            onCheckedChange={(checked) => toggleStudentSubmission(student.id, checked as boolean)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              {/* Bulk Actions */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newMap = new Map();
+                    students.forEach(s => newMap.set(s.id, true));
+                    setStudentSubmissions(newMap);
+                  }}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Mark All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newMap = new Map();
+                    students.forEach(s => newMap.set(s.id, false));
+                    setStudentSubmissions(newMap);
+                  }}
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Unmark All
+                </Button>
+              </div>
             </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMarkingDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveMarkingChanges}>
+              <Save className="h-4 w-4 mr-2" />
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

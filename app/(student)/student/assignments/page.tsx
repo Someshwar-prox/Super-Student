@@ -6,19 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { BookOpen, Calendar, Award, Clock, CheckCircle2, AlertCircle, Upload, FileText } from "lucide-react";
+import { BookOpen, Calendar, Award, Clock, CheckCircle2, AlertCircle, Upload, FileText, UserCheck } from "lucide-react";
 import { assignments, subjects, type Assignment, type Student } from "@/lib/data";
-
-interface AssignmentSubmission {
-  assignmentId: string;
-  studentId: string;
-  submittedAt: string;
-  content: string;
-  status: "submitted" | "graded";
-  marks?: number;
-}
-
-const SUBMISSIONS_KEY = "assignment_submissions";
+import {
+  getSubmissions,
+  saveSubmissions,
+  hasStudentSubmitted,
+  getStudentSubmission,
+  type AssignmentSubmission
+} from "@/lib/assignment-submissions-store";
 
 export default function StudentAssignmentsPage() {
   const [assignmentList] = useState<Assignment[]>(assignments);
@@ -35,26 +31,22 @@ export default function StudentAssignmentsPage() {
       setStudent(JSON.parse(storedStudent));
     }
 
-    // Load submissions from localStorage
-    const storedSubmissions = localStorage.getItem(SUBMISSIONS_KEY);
-    if (storedSubmissions) {
-      setSubmissions(JSON.parse(storedSubmissions));
-    }
+    // Load submissions from store
+    setSubmissions(getSubmissions());
   }, []);
 
-  const saveSubmissions = (newSubmissions: AssignmentSubmission[]) => {
-    localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(newSubmissions));
-    setSubmissions(newSubmissions);
+  const refreshSubmissions = () => {
+    setSubmissions(getSubmissions());
   };
 
   const hasSubmitted = (assignmentId: string) => {
     if (!student) return false;
-    return submissions.some(s => s.assignmentId === assignmentId && s.studentId === student.id);
+    return hasStudentSubmitted(assignmentId, student.id);
   };
 
   const getSubmission = (assignmentId: string) => {
     if (!student) return null;
-    return submissions.find(s => s.assignmentId === assignmentId && s.studentId === student.id);
+    return getStudentSubmission(assignmentId, student.id);
   };
 
   const getSubjectName = (subjectId: string) => {
@@ -92,8 +84,10 @@ export default function StudentAssignmentsPage() {
       status: "submitted",
     };
 
-    const updatedSubmissions = [...submissions, newSubmission];
+    const currentSubmissions = getSubmissions();
+    const updatedSubmissions = [...currentSubmissions, newSubmission];
     saveSubmissions(updatedSubmissions);
+    refreshSubmissions();
 
     setTimeout(() => {
       setIsSubmitting(false);
@@ -185,13 +179,29 @@ export default function StudentAssignmentsPage() {
                       {/* Submit Button */}
                       {hasSubmitted(assignment.id) ? (
                         <div className="mt-4 flex items-center gap-2">
-                          <Badge variant="default" className="bg-green-600">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Submitted
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(getSubmission(assignment.id)?.submittedAt || "").toLocaleString()}
-                          </span>
+                          {getSubmission(assignment.id)?.markedByFaculty ? (
+                            <>
+                              <Badge variant="default" className="bg-blue-600">
+                                <UserCheck className="h-3 w-3 mr-1" />
+                                Marked by Faculty
+                              </Badge>
+                              {getSubmission(assignment.id)?.facultyRemark && (
+                                <span className="text-xs text-muted-foreground">
+                                  Note: {getSubmission(assignment.id)?.facultyRemark}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <Badge variant="default" className="bg-green-600">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Submitted
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(getSubmission(assignment.id)?.submittedAt || "").toLocaleString()}
+                              </span>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <Button
@@ -251,10 +261,17 @@ export default function StudentAssignmentsPage() {
                             Closed
                           </Badge>
                           {submission && (
-                            <Badge variant="default" className="bg-green-600">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Submitted
-                            </Badge>
+                            submission.markedByFaculty ? (
+                              <Badge variant="default" className="bg-blue-600">
+                                <UserCheck className="h-3 w-3 mr-1" />
+                                Faculty Marked
+                              </Badge>
+                            ) : (
+                              <Badge variant="default" className="bg-green-600">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Submitted
+                              </Badge>
+                            )
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
