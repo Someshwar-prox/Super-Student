@@ -32,7 +32,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+        <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-accent/5" />
         <div className="container mx-auto px-6 py-16 lg:py-24 relative">
           <div className="max-w-3xl mx-auto text-center">
             <div className="flex justify-center mb-6">
@@ -70,7 +70,7 @@ export default function HomePage() {
               Select your role to access the appropriate features and functionality.
             </p>
           </div>
-          
+
           {/* Portal Cards */}
           <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-6 mb-12">
             {/* Student Portal Card */}
@@ -230,7 +230,7 @@ export default function HomePage() {
             <div>
               <h2 className="text-3xl font-bold text-foreground mb-6">Key Highlights</h2>
               <p className="text-muted-foreground mb-8">
-                Designed specifically for Andhra University faculty and staff, this application streamlines 
+                Designed specifically for Andhra University faculty and staff, this application streamlines
                 daily administrative tasks and provides powerful insights into student attendance patterns.
               </p>
               <ul className="space-y-4">

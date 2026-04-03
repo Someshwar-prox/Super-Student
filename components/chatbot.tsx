@@ -10,8 +10,6 @@ interface Message {
   content: string;
 }
 
-const GROQ_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY || "";
-
 const SYSTEM_PROMPT = `You are a helpful assistant for the CSSE Super Student App - Andhra University.
 
 WEBSITE INFORMATION:
@@ -86,21 +84,17 @@ export function Chatbot() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      const response = await fetch("/api/chatbot", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             ...messages.map((m) => ({ role: m.role, content: m.content })),
             { role: "user", content: userMessage },
           ],
-          temperature: 0.7,
-          max_tokens: 500,
         }),
       });
 
@@ -137,7 +131,7 @@ export function Chatbot() {
       {/* Chat Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-[100] p-0 hover:scale-105 transition-transform"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-100 p-0 hover:scale-105 transition-transform"
         size="icon"
       >
         {isOpen ? (
@@ -149,7 +143,7 @@ export function Chatbot() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-[90vw] max-w-[400px] h-[500px] bg-background border rounded-2xl shadow-2xl z-[100] flex flex-col overflow-hidden">
+        <div className="fixed bottom-24 right-6 w-[90vw] max-w-[400px] h-[500px] bg-background border rounded-2xl shadow-2xl z-100 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="border-b bg-primary text-primary-foreground py-3 px-4 flex items-center gap-2 shrink-0">
             <Bot className="h-5 w-5" />
@@ -161,17 +155,15 @@ export function Chatbot() {
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={`flex gap-2 ${
-                  message.role === "user" ? "flex-row-reverse" : ""
-                }`}
+                className={`flex gap-2 ${message.role === "user" ? "flex-row-reverse" : ""
+                  }`}
               >
                 {/* Avatar */}
                 <div
-                  className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  }`}
+                  className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                    }`}
                 >
                   {message.role === "user" ? (
                     <User className="h-4 w-4" />
@@ -182,11 +174,10 @@ export function Chatbot() {
 
                 {/* Message Bubble */}
                 <div
-                  className={`rounded-lg px-3 py-2 text-sm break-words whitespace-pre-wrap overflow-hidden ${
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  }`}
+                  className={`rounded-lg px-3 py-2 text-sm wrap-break-word whitespace-pre-wrap overflow-hidden ${message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                    }`}
                   style={{
                     maxWidth: "calc(100% - 48px)",
                     wordBreak: "break-word"
