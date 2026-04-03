@@ -34,6 +34,12 @@ const navItems = [
     description: "Class Schedule",
   },
   {
+    title: "Attendance Reports",
+    href: "/hod/attendance",
+    icon: CheckCircle2,
+    description: "Multi-dimensional Analytics",
+  },
+  {
     title: "Letters",
     href: "/hod/letters",
     icon: FileText,

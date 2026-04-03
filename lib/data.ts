@@ -166,7 +166,7 @@ export const timetable: TimetableEntry[] = [
   { day: "MON", period: 5, subjectId: "CS3209", type: "lab" }, // ES LAB-1
   { day: "MON", period: 6, subjectId: "CS3207", type: "lab" }, // ML LAB-2
   { day: "MON", period: 7, subjectId: null, type: "ncc/nss" },
-  
+
   // Tuesday
   { day: "TUE", period: 1, subjectId: "CS3205", type: "class" }, // ES
   { day: "TUE", period: 2, subjectId: "CS3205", type: "class" }, // ES
@@ -175,7 +175,7 @@ export const timetable: TimetableEntry[] = [
   { day: "TUE", period: 5, subjectId: "CS3203", type: "class" }, // CNS
   { day: "TUE", period: 6, subjectId: "CS3203", type: "class" }, // CNS
   { day: "TUE", period: 7, subjectId: null, type: "ncc/nss" },
-  
+
   // Wednesday
   { day: "WED", period: 1, subjectId: "CS3204", type: "class" }, // CC
   { day: "WED", period: 2, subjectId: "CS3204", type: "class" }, // CC
@@ -184,7 +184,7 @@ export const timetable: TimetableEntry[] = [
   { day: "WED", period: 5, subjectId: "CS3209", type: "lab" }, // ES LAB-2
   { day: "WED", period: 6, subjectId: "CS3208", type: "lab" }, // CNS LAB-1
   { day: "WED", period: 7, subjectId: null, type: "ncc/nss" },
-  
+
   // Thursday
   { day: "THU", period: 1, subjectId: "CS3207", type: "lab" }, // ML LAB-1
   { day: "THU", period: 2, subjectId: "CS3206", type: "lab" }, // OOSE LAB-2
@@ -193,7 +193,7 @@ export const timetable: TimetableEntry[] = [
   { day: "THU", period: 5, subjectId: null, type: "remedial" }, // REMEDIAL CLASSES
   { day: "THU", period: 6, subjectId: null, type: "remedial" },
   { day: "THU", period: 7, subjectId: null, type: "ncc/nss" },
-  
+
   // Friday
   { day: "FRI", period: 1, subjectId: "CS3204", type: "class" }, // CC
   { day: "FRI", period: 2, subjectId: "CS3204", type: "class" }, // CC
@@ -202,7 +202,7 @@ export const timetable: TimetableEntry[] = [
   { day: "FRI", period: 5, subjectId: "CS3203", type: "class" }, // CNS
   { day: "FRI", period: 6, subjectId: "CS3203", type: "class" }, // CNS
   { day: "FRI", period: 7, subjectId: null, type: "ncc/nss" },
-  
+
   // Saturday
   { day: "SAT", period: 1, subjectId: null, type: "self-study" },
   { day: "SAT", period: 2, subjectId: null, type: "self-study" },
@@ -344,7 +344,7 @@ export function getAssignmentsBySubject(subjectId: string): Assignment[] {
 // Seeded random number generator for deterministic attendance data
 // This prevents hydration mismatches between server and client
 function seededRandom(seed: number): () => number {
-  return function() {
+  return function () {
     seed = (seed * 1103515245 + 12345) & 0x7fffffff;
     return seed / 0x7fffffff;
   };
@@ -355,26 +355,26 @@ function generateAttendanceData(): AttendanceRecord[] {
   const records: AttendanceRecord[] = [];
   const startDate = new Date("2026-01-19"); // W.E.F from timetable
   const endDate = new Date("2026-03-29");
-  
+
   let recordId = 1;
   const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-  
+
   // Use a fixed seed for deterministic generation
   const random = seededRandom(42);
-  
+
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
     const dayName = days[d.getDay()];
-    
+
     // Skip Sundays
     if (dayName === "SUN") continue;
-    
+
     const dateStr = d.toISOString().split("T")[0];
     const dayTimetable = timetable.filter(t => t.day === dayName && t.subjectId !== null);
-    
+
     students.forEach((student) => {
       dayTimetable.forEach((entry) => {
         if (!entry.subjectId) return;
-        
+
         // Generate attendance with deterministic randomness
         // Students ending in 5, 9, 3 have lower attendance (chronic absentees)
         let absentProbability = 0.12;
@@ -382,10 +382,10 @@ function generateAttendanceData(): AttendanceRecord[] {
         if ([5, 9, 3].includes(rollEnd)) {
           absentProbability = 0.42;
         }
-        
+
         const isAbsent = random() < absentProbability;
         const subject = subjects.find(s => s.id === entry.subjectId);
-        
+
         records.push({
           id: `ATT${String(recordId++).padStart(6, "0")}`,
           studentId: student.id,
@@ -398,7 +398,7 @@ function generateAttendanceData(): AttendanceRecord[] {
       });
     });
   }
-  
+
   return records;
 }
 
@@ -429,11 +429,11 @@ export function getStudentByRollNumber(rollNumber: string): Student | null {
   // Try exact match first
   let student = students.find((s) => s.rollNumber.toLowerCase() === rollNumber.toLowerCase());
   if (student) return student;
-  
+
   // Try matching with registration number
   student = students.find((s) => s.regdNo === rollNumber);
   if (student) return student;
-  
+
   // Try partial match (last 5 digits)
   const partial = rollNumber.slice(-5);
   return students.find((s) => s.rollNumber.endsWith(partial) || s.regdNo.endsWith(partial)) || null;
@@ -467,8 +467,8 @@ export function validateStudentLogin(identifier: string, password: string): Stud
   const student = students.find(
     (s) =>
       (s.rollNumber.toLowerCase() === identifier.toLowerCase() ||
-       s.regdNo.toLowerCase() === identifier.toLowerCase() ||
-       s.email.toLowerCase() === identifier.toLowerCase()) &&
+        s.regdNo.toLowerCase() === identifier.toLowerCase() ||
+        s.email.toLowerCase() === identifier.toLowerCase()) &&
       s.password === password
   );
   return student || null;
@@ -476,15 +476,15 @@ export function validateStudentLogin(identifier: string, password: string): Stud
 
 export function calculateStudentAttendance(studentId: string, subjectId?: string): { total: number; present: number; percentage: number } {
   let filtered = attendanceRecords.filter((r) => r.studentId === studentId);
-  
+
   if (subjectId) {
     filtered = filtered.filter((r) => r.subjectId === subjectId);
   }
-  
+
   const total = filtered.length;
   const present = filtered.filter((r) => r.status === "present").length;
   const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-  
+
   return { total, present, percentage };
 }
 
@@ -495,7 +495,7 @@ export function getAttendanceByDate(date: string): AttendanceRecord[] {
 export function getAbsenteesForDate(date: string): { student: Student; records: AttendanceRecord[] }[] {
   const dateRecords = getAttendanceByDate(date);
   const absenteeMap = new Map<string, AttendanceRecord[]>();
-  
+
   dateRecords.forEach((record) => {
     if (record.status === "absent") {
       if (!absenteeMap.has(record.studentId)) {
@@ -504,7 +504,7 @@ export function getAbsenteesForDate(date: string): { student: Student; records: 
       absenteeMap.get(record.studentId)!.push(record);
     }
   });
-  
+
   return Array.from(absenteeMap.entries()).map(([studentId, records]) => ({
     student: getStudentById(studentId)!,
     records,
@@ -527,18 +527,18 @@ export function getTimetableForDay(day: string): TimetableEntry[] {
 export function getCurrentPeriodInfo(): { period: number; subject: Subject | null; timeSlot: TimeSlot } | null {
   const now = new Date();
   const currentTime = now.getHours() * 60 + now.getMinutes();
-  
+
   for (const slot of timeSlots) {
     const [startH, startM] = slot.startTime.split(":").map(Number);
     const [endH, endM] = slot.endTime.split(":").map(Number);
     const slotStart = startH * 60 + startM;
     const slotEnd = endH * 60 + endM;
-    
+
     if (currentTime >= slotStart && currentTime <= slotEnd) {
       const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
       const dayName = days[now.getDay()];
       const entry = timetable.find(t => t.day === dayName && t.period === slot.period);
-      
+
       return {
         period: slot.period,
         subject: entry?.subjectId ? getSubjectById(entry.subjectId) || null : null,
@@ -546,8 +546,156 @@ export function getCurrentPeriodInfo(): { period: number; subject: Subject | nul
       };
     }
   }
-  
+
   return null;
+}
+
+// Multi-dimensional Reporting Functions
+
+export interface SubjectAttendanceStats {
+  subjectId: string;
+  subjectName: string;
+  totalClasses: number;
+  studentStats: Array<{
+    studentId: string;
+    studentName: string;
+    present: number;
+    absent: number;
+    late: number;
+    percentage: number;
+  }>;
+}
+
+export interface StudentEligibility {
+  studentId: string;
+  studentName: string;
+  totalAttendance: number;
+  bySubject: Array<{
+    subjectId: string;
+    subjectName: string;
+    attendance: number;
+    isEligible: boolean; // 75% required
+  }>;
+  overallEligible: boolean;
+  eligibilityStatus: "Eligible" | "At Risk" | "Ineligible";
+}
+
+// Get attendance breakdown by subject
+export function getAttendanceBySubject(): SubjectAttendanceStats[] {
+  const subjectStats: Map<string, SubjectAttendanceStats> = new Map();
+
+  subjects.forEach((subject) => {
+    const allRecords = attendanceRecords.filter((r) => r.subjectId === subject.id);
+    const totalClasses = new Set(allRecords.map((r) => r.date)).size;
+
+    const studentStats = students.map((student) => {
+      const studentRecords = allRecords.filter((r) => r.studentId === student.id);
+      const present = studentRecords.filter((r) => r.status === "present").length;
+      const absent = studentRecords.filter((r) => r.status === "absent").length;
+      const late = studentRecords.filter((r) => r.status === "late").length;
+      const percentage = studentRecords.length > 0 ? Math.round((present / studentRecords.length) * 100) : 0;
+
+      return {
+        studentId: student.id,
+        studentName: student.name,
+        present,
+        absent,
+        late,
+        percentage,
+      };
+    });
+
+    subjectStats.set(subject.id, {
+      subjectId: subject.id,
+      subjectName: subject.name,
+      totalClasses,
+      studentStats,
+    });
+  });
+
+  return Array.from(subjectStats.values());
+}
+
+// Get students skipping specific labs/practicals
+export function getLabSkippers() {
+  const labSubjects = subjects.filter((s) => s.type === "lab" || s.type === "practical");
+  const skippers: Array<{
+    student: Student;
+    subject: Subject;
+    attendancePercentage: number;
+    missedClasses: number;
+  }> = [];
+
+  labSubjects.forEach((subject) => {
+    students.forEach((student) => {
+      const subjectRecords = attendanceRecords.filter(
+        (r) => r.studentId === student.id && r.subjectId === subject.id
+      );
+
+      if (subjectRecords.length > 0) {
+        const absent = subjectRecords.filter((r) => r.status === "absent").length;
+        const percentage = Math.round(
+          ((subjectRecords.length - absent) / subjectRecords.length) * 100
+        );
+
+        if (percentage < ATTENDANCE_THRESHOLD) {
+          skippers.push({
+            student,
+            subject,
+            attendancePercentage: percentage,
+            missedClasses: absent,
+          });
+        }
+      }
+    });
+  });
+
+  return skippers.sort((a, b) => a.attendancePercentage - b.attendancePercentage);
+}
+
+// Get semester-wise eligibility (75% required for each subject)
+export function getSemesterEligibility(): StudentEligibility[] {
+  return students.map((student) => {
+    let totalAttendance = 0;
+    let totalRecords = 0;
+    const bySubject: StudentEligibility["bySubject"] = [];
+    let allEligible = true;
+
+    subjects.forEach((subject) => {
+      const subjectRecords = attendanceRecords.filter(
+        (r) => r.studentId === student.id && r.subjectId === subject.id
+      );
+
+      if (subjectRecords.length > 0) {
+        const present = subjectRecords.filter((r) => r.status === "present" || r.status === "late")
+          .length;
+        const percentage = Math.round((present / subjectRecords.length) * 100);
+        const isEligible = percentage >= ATTENDANCE_THRESHOLD;
+
+        bySubject.push({
+          subjectId: subject.id,
+          subjectName: subject.name,
+          attendance: percentage,
+          isEligible,
+        });
+
+        totalAttendance += present;
+        totalRecords += subjectRecords.length;
+        if (!isEligible) allEligible = false;
+      }
+    });
+
+    const overallPercentage = totalRecords > 0 ? Math.round((totalAttendance / totalRecords) * 100) : 0;
+
+    return {
+      studentId: student.id,
+      studentName: student.name,
+      totalAttendance: overallPercentage,
+      bySubject,
+      overallEligible: allEligible,
+      eligibilityStatus: allEligible ? "Eligible" : overallPercentage >= 65 ? "At Risk" : "Ineligible",
+    };
+  });
 }
 
 export const ATTENDANCE_THRESHOLD = 75; // Minimum required attendance percentage
