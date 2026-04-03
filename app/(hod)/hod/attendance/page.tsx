@@ -196,7 +196,7 @@ export default function HODAttendancePage() {
                                 <CardContent className="pt-6">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm text-muted-foreground">Total Classes</p>
+                                            <p className="text-sm text-muted-foreground">Total Students</p>
                                             <p className="text-3xl font-bold text-foreground">
                                                 {dayWiseStats.totalRecords}
                                             </p>
